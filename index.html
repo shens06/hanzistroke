@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hanzi Learning Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary: #10b981;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --border: #e5e7eb;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+  }
+  
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem;
+    color: var(--text-primary);
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease;
+  }
+  
+  .header h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  
+  .header .subtitle {
+    font-size: 1.125rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 400;
+  }
+  
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    animation: fadeInUp 0.6s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .card-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 2px;
+  }
+  
+  /* Input Section */
+  .input-section {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.875rem 1.25rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: var(--bg-main);
+  }
+  
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
+  }
+  
+  /* Buttons */
+  button {
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+  
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  button:active {
+    transform: translateY(0);
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+  }
+  
+  .btn-secondary {
+    background: linear-gradient(135deg, var(--secondary), #059669);
+    color: white;
+  }
+  
+  .btn-accent {
+    background: linear-gradient(135deg, var(--accent), #d97706);
+    color: white;
+  }
+  
+  .btn-danger {
+    background: linear-gradient(135deg, var(--danger), #dc2626);
+    color: white;
+  }
+  
+  .btn-outline {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+  }
+  
+  /* Candidates */
+  #candidates {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  
+  .candidate {
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .candidate:hover {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    transform: translateY(-2px);
+  }
+  
+  .candidate.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+  }
+  
+  /* Target Viewer */
+  .viewer-container {
+    text-align: center;
+  }
+  
+  #target {
+    width: 100%;
+    max-width: 400px;
+    height: 400px;
+    margin: 1.5rem auto;
+    border: 3px dashed var(--border);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fefefe, #f9fafb);
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    transition: all 0.3s ease;
+  }
+  
+  #target:has(#hw) {
+    border-style: solid;
+    border-color: var(--primary);
+    background: white;
+  }
+  
+  .viewer-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  /* Character Grid */
+  #character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  
+  .character-card {
+    background: linear-gradient(135deg, #ffffff, #f9fafb);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: scaleIn 0.4s ease;
+  }
+  
+  .character-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .char-canvas {
+    margin: 0 auto 1rem;
+  }
+  
+  .pinyin {
+    font-size: 1.125rem;
+    color: var(--primary);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .meaning {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+  
+  .card-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+  
+  .card-buttons button {
+    width: 100%;
+    padding: 0.625rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Example Buttons */
+  .example-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  
+  .example-btn {
+    padding: 0.75rem 1.25rem;
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .example-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Speaker Icon */
+  .speaker-icon {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    font-size: 1.25rem;
+  }
+  
+  .speaker-icon:hover {
+    transform: scale(1.2);
+  }
+  
+  /* Info Messages */
+  .info-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-left: 4px solid #0ea5e9;
+    border-radius: 8px;
+  }
+  
+  .error-msg {
+    color: var(--danger);
+    font-weight: 600;
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #fee;
+    border-left: 4px solid var(--danger);
+    border-radius: 8px;
+    display: none;
+  }
+  
+  #diagResult {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  #pinyinShow {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 8px;
+    font-weight: 600;
+    color: #78350f;
+    display: none;
+  }
+  
+  #pinyinShow:not(:empty) {
+    display: block;
+  }
+  
+  /* Animations */
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    body {
+      padding: 1rem;
+    }
+    
+    .header h1 {
+      font-size: 2rem;
+    }
+    
+    .card {
+      padding: 1.5rem;
+    }
+    
+    .input-section {
+      flex-direction: column;
+    }
+    
+    input[type="text"] {
+      width: 100%;
+    }
+    
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    #target {
+      height: 300px;
+    }
+    
+    #character-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>✨ Hanzi Learning Studio</h1>
+      <p class="subtitle">Master Chinese Characters with Stroke Order, Pronunciation & Translation</p>
+    </header>
+
+    <div class="card">
+      <h2 class="card-title">Search Characters</h2>
+      <div class="input-section">
+        <input id="inputBox" type="text" placeholder="Type pinyin (e.g. nv3, ni3 hao3) or paste Chinese characters (你好世界)..." />
+        <button id="showBtn" class="btn-primary">🔍 Search</button>
+        <button id="animateAllBtn" class="btn-secondary">▶️ Animate All</button>
+        <button id="clearBtn" class="btn-danger">🗑️ Clear All</button>
+      </div>
+      <div id="pinyinShow"></div>
+      <div id="candidates" aria-live="polite"></div>
+      <div class="info-text">
+        💡 <strong>Tip:</strong> Use <code>v</code> for <code>ü</code> and numbers (1-4) for tones. Example: <code>nv3</code> = 女 (woman)
+      </div>
+      <div id="libError" class="error-msg" role="status" aria-live="polite"></div>
+      <div id="diagResult" aria-live="polite"></div>
+    </div>
+
+    <div class="card viewer-container">
+      <h2 class="card-title">Stroke Order Viewer</h2>
+      <div id="target" aria-live="polite">
+        <div style="text-align: center; padding: 2rem;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🖌️</div>
+          <div>Select a character to view stroke order animation</div>
+        </div>
+      </div>
+      <div class="viewer-buttons">
+        <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
+        <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
+        <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">My Character Collection</h2>
+      <div id="character-grid"></div>
+      
+      <div class="example-buttons">
+        <button class="example-btn" data-example="你好">👋 Hello (你好)</button>
+        <button class="example-btn" data-example="中国">🇨🇳 China (中国)</button>
+        <button class="example-btn" data-example="爱">❤️ Love (爱)</button>
+        <button class="example-btn" data-example="学习">📚 Study (学习)</button>
+        <button class="example-btn" data-example="朋友">🤝 Friend (朋友)</button>
+        <button class="example-btn" data-example="谢谢">🙏 Thanks (谢谢)</button>
+        <button class="example-btn" data-example="龙">🐉 Dragon (龙)</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+let currentSpeech = null;
+
+function speakChinese(text) {
+  if (!text) return;
+  if (currentSpeech) {
+    window.speechSynthesis.cancel();
+  }
+  if (!('speechSynthesis' in window)) {
+    alert('Sorry, your browser does not support speech synthesis');
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'zh-CN';
+  utterance.rate = 0.8;
+  utterance.pitch = 1;
+  currentSpeech = utterance;
+  window.speechSynthesis.speak(utterance);
+}
+
+function addListenerIfExists(idOrEl, event, handler){
+  try{
+    const el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
+    if (el) { el.addEventListener(event, handler); return true; }
+    console.warn('Element not found for listener:', idOrEl);
+    return false;
+  }catch(e){ console.error('addListenerIfExists error for', idOrEl, e); return false; }
+}
+
+function loadExternalScript(src){
+  return new Promise((resolve, reject) => {
+    try {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      s.onload = () => resolve();
+      s.onerror = (e) => reject(new Error('Failed to load script: ' + src));
+      document.head.appendChild(s);
+    } catch (e) { reject(e); }
+  });
+}
+
+async function ensureHanziWriterLoaded(){
+  if (typeof window.HanziWriter !== 'undefined') return;
+  await loadExternalScript('https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js');
+}
+
+function safeShowOrRender(instance){
+  if (!instance) return;
+  if (typeof instance.showCharacter === 'function'){ try{ instance.showCharacter(); return; }catch(e){ console.warn('showCharacter failed', e); } }
+  if (typeof instance.renderCharacter === 'function'){ try{ instance.renderCharacter(); return; }catch(e){ console.warn('renderCharacter failed', e); } }
+  if (typeof instance.animateCharacter === 'function'){ try{ instance.animateCharacter(); return; }catch(e){ console.warn('animateCharacter failed', e); } }
+  console.warn('No render/show/animate method available on HanziWriter instance', instance);
+}
+
+function normalizePinyin(p) { if (!p) return p; p = p.trim().toLowerCase(); p = p.replace(/v/g, 'ü'); const m = p.match(/^([a-zü:]+)([1-4])$/i); if (!m) return p; const base = m[1]; const tone = parseInt(m[2], 10); const toneMap = { a:['ā','á','ǎ','à'], e:['ē','é','ě','è'], i:['ī','í','ǐ','ì'], o:['ō','ó','ǒ','ò'], u:['ū','ú','ǔ','ù'], 'ü':['ǖ','ǘ','ǚ','ǜ'] }; for (const v of ['a','e','o','i','u','ü']) if (base.includes(v)) return base.replace(v, toneMap[v][tone-1]); return base; }
+function pinyinQueryKey(p){ 
+  if (!p) return ''; 
+  p = p.trim().toLowerCase();
+  p = p.replace(/[1-4]/g,''); 
+  return p; 
+}
+
+async function fetchCandidatesFromGoogle(pinyinPlain){ try{ const url = 'https://inputtools.google.com/request?text=' + encodeURIComponent(pinyinPlain) + '&itc=zh-t-i0-pinyin&num=15'; const r = await fetch(url); const j = await r.json(); if (Array.isArray(j) && j.length >= 2){ const payload = j[1]; if (Array.isArray(payload) && payload.length > 0){ const candidates = payload[0][1]; return candidates || []; }} return []; }catch(e){ console.warn('candidate fetch error', e); return []; } }
+
+async function translateToEnglish(chineseText) {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=en&dt=t&q=${encodeURIComponent(chineseText)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data && data[0] && data[0][0] && data[0][0][0]) {
+      return data[0][0][0];
+    }
+    return 'meaning unavailable';
+  } catch (e) {
+    console.warn('Translation error:', e);
+    return 'meaning unavailable';
+  }
+}
+
+let writers = [];
+let writerInstance = null;
+let currentTargetChar = '';
+const meanings = { '你':{pinyin:'nǐ',meaning:'you'}, '好':{pinyin:'hǎo',meaning:'good'}, '爱':{pinyin:'ài',meaning:'love'}, '中':{pinyin:'zhōng',meaning:'China'}, '国':{pinyin:'guó',meaning:'country'}, '女':{pinyin:'nǚ',meaning:'woman/female'} };
+
+async function renderCharacterInTarget(char){
+  currentTargetChar = char;
+  const container = document.getElementById('target');
+  if (!container) { console.error('renderCharacterInTarget: #target not found'); return; }
+  container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+  try{ await ensureHanziWriterLoaded(); }catch(e){ const msg = document.getElementById('libError'); if (msg){ msg.style.display='block'; msg.textContent = 'Unable to load HanziWriter library. Check network or CSP settings.'; } console.error('HanziWriter load failed', e); return; }
+
+  try{
+    if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API is not available');
+    const size = Math.min(360, container.clientWidth - 40);
+    writerInstance = window.HanziWriter.create('hw', char, { width: size, height: size, padding:10, showOutline:true, showCharacter:true, strokeAnimationSpeed:1.5, delayBetweenStrokes:200 });
+    safeShowOrRender(writerInstance);
+    if (writerInstance && typeof writerInstance.animateCharacter === 'function'){
+      setTimeout(()=>{ try{ writerInstance.animateCharacter(); }catch(e){ console.warn('animate failed', e); } }, 350);
+    }
+  }catch(e){ container.textContent = 'Unable to render stroke order (character data not available).'; console.error('renderCharacterInTarget error', e); }
+}
+
+async function createCharacterCard(char){
+  const grid = document.getElementById('character-grid');
+  if (!grid){ console.error('createCharacterCard: #character-grid not found'); return; }
+  const card = document.createElement('div'); card.className='character-card';
+  const id = 'card-'+char+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);
+  const canvasDiv = document.createElement('div'); canvasDiv.className='char-canvas'; canvasDiv.id=id; canvasDiv.style.width='150px'; canvasDiv.style.height='150px'; canvasDiv.style.margin='0 auto';
+  const infoDiv = document.createElement('div'); 
+  let charInfo = meanings[char];
+  let meaningText = 'loading...';
+  if (charInfo) {
+    meaningText = charInfo.meaning;
+  } else {
+    const translation = await translateToEnglish(char);
+    meaningText = translation;
+    meanings[char] = {pinyin: '?', meaning: translation};
+  }
+  const pinyinText = charInfo ? charInfo.pinyin : '?';
+  infoDiv.innerHTML = `<div class="pinyin">${pinyinText} <span class="speaker-icon" onclick="speakChinese('${char}')" title="Pronounce">🔊</span></div><div class="meaning">${meaningText}</div>`;
+  const buttons = document.createElement('div'); 
+  buttons.className='card-buttons'; 
+  buttons.innerHTML = `<button onclick="animateCard('${id}')" class="btn-primary">▶️ Play</button><button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button><button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button>`;
+  card.appendChild(canvasDiv); card.appendChild(infoDiv); card.appendChild(buttons); grid.appendChild(card);
+  try{ await ensureHanziWriterLoaded(); if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API not available'); const w = window.HanziWriter.create(id, char, { width:150, height:150, padding:5, showOutline:true, strokeAnimationSpeed:2, delayBetweenStrokes:200 }); safeShowOrRender(w); writers.push({id, writer:w, char}); }catch(e){ console.error('createCharacterCard error', e); }
+}
+
+function animateCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter(); }
+function quizCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.quiz === 'function'){ item.writer.quiz({ onComplete:function(passed){ if (passed) alert('Great job! 🎉'); else alert('Keep practicing! 💪'); }}); } else alert('Quiz not supported for this card.'); }
+function focusToTarget(char){ renderCharacterInTarget(char); document.getElementById('target').scrollIntoView({behavior: 'smooth', block: 'center'}); }
+
+async function handleInputRaw(raw){
+  const candidatesDiv = document.getElementById('candidates'); const pinyinShow = document.getElementById('pinyinShow');
+  if (candidatesDiv) candidatesDiv.innerHTML=''; const target = document.getElementById('target'); if (target) target.innerHTML='<div style="text-align: center; padding: 2rem;"><div style="font-size: 3rem; margin-bottom: 1rem;">🖌️</div><div>Select a character to view stroke order animation</div></div>'; if (pinyinShow) pinyinShow.textContent='';
+  if (!raw || raw.trim()==='') return;
+  const containsChinese = /[\u4e00-\u9fff]/.test(raw);
+  if (containsChinese){ const text = raw.trim(); for (let ch of text){ if (ch.trim()===''||!/[\u4e00-\u9fff]/.test(ch)) continue; await createCharacterCard(ch); } const first = text.trim().match(/[\u4e00-\u9fff]/); if (first) renderCharacterInTarget(first[0]); return; }
+  const parts = raw.trim().split(/\s+/); const key = parts[0]; const norm = normalizePinyin(key); if (pinyinShow) pinyinShow.textContent = `✨ Normalized pinyin: ${norm}`;
+  const q = pinyinQueryKey(key); if (!q){ if (candidatesDiv) candidatesDiv.innerHTML='<div class="info-text">Unable to parse input. Please try again.</div>'; return; }
+  if (candidatesDiv) candidatesDiv.innerHTML='<div class="info-text">🔍 Fetching candidates...</div>'; const candidates = await fetchCandidatesFromGoogle(q); if (candidatesDiv) candidatesDiv.innerHTML=''; if (!candidates || candidates.length===0){ if (candidatesDiv) candidatesDiv.innerHTML='<div class="info-text">No candidates found. Try different pinyin.</div>'; return; }
+  const max = Math.min(12, candidates.length); for (let i=0;i<max;i++){ const ch = candidates[i]; const btn = document.createElement('div'); btn.className='candidate'; btn.innerHTML = ch + ' <span class="speaker-icon" style="font-size:0.9em" title="Pronounce">🔊</span>'; btn.title='Click to view stroke order: '+ch; 
+  btn.querySelector('.speaker-icon').onclick = (e) => {
+    e.stopPropagation();
+    speakChinese(ch);
+  };
+  btn.onclick = async ()=>{
+      if (candidatesDiv){ Array.from(candidatesDiv.children).forEach(c=>c.classList.remove('selected')); btn.classList.add('selected'); }
+      if (/[\u4e00-\u9fff]/.test(ch) && ch.length > 1){
+        for (const c of ch){ if (/[\u4e00-\u9fff]/.test(c)) await createCharacterCard(c); }
+        for (const c of ch){ await renderCharacterInTarget(c); await new Promise(r => setTimeout(r, 200)); }
+        return;
+      }
+      await renderCharacterInTarget(ch);
+      await createCharacterCard(ch);
+      if (typeof parts !== 'undefined' && parts.length > 1){
+        const remaining = parts.slice(1);
+        for (const s of remaining){
+          const q2 = pinyinQueryKey(s);
+          if (!q2) continue;
+          const cands2 = await fetchCandidatesFromGoogle(q2);
+          if (cands2 && cands2.length){
+            const top = cands2[0];
+            await createCharacterCard(top);
+            await renderCharacterInTarget(top);
+          }
+        }
+      }
+    }; if (candidatesDiv) candidatesDiv.appendChild(btn); }
+  if (candidatesDiv && candidatesDiv.firstChild) candidatesDiv.firstChild.click();
+}
+
+function loadExample(text){ const input = document.getElementById('inputBox'); if (input){ input.value = text; handleInputRaw(text); } }
+
+function init(){
+  addListenerIfExists('showBtn', 'click', ()=> handleInputRaw(document.getElementById('inputBox') ? document.getElementById('inputBox').value : ''));
+  addListenerIfExists('animateAllBtn', 'click', ()=>{ if (writers.length===0){ alert('Please add some characters first!'); return; } writers.forEach((w, idx)=>{ setTimeout(()=>{ try{ if (w.writer && typeof w.writer.animateCharacter==='function') w.writer.animateCharacter(); }catch(e){} }, idx*1200); }); });
+  addListenerIfExists('clearBtn', 'click', ()=>{ const grid = document.getElementById('character-grid'); if (grid) grid.innerHTML=''; const cand = document.getElementById('candidates'); if (cand) cand.innerHTML=''; const target = document.getElementById('target'); if (target) target.innerHTML='<div style="text-align: center; padding: 2rem;"><div style="font-size: 3rem; margin-bottom: 1rem;">🖌️</div><div>Select a character to view stroke order animation</div></div>'; const pinyin = document.getElementById('pinyinShow'); if (pinyin) pinyin.textContent=''; const input = document.getElementById('inputBox'); if (input) input.value=''; writers=[]; writerInstance=null; currentTargetChar=''; const msg=document.getElementById('libError'); if (msg){ msg.style.display='none'; msg.textContent=''; } });
+  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') writerInstance.animateCharacter(); else alert('Please select a character first'); });
+  addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) alert('Great! 🎉'); else alert('Try again! 💪'); }}); } else alert('Please select a character first'); });
+  addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
+  const inputBox = document.getElementById('inputBox'); if (inputBox){ inputBox.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ handleInputRaw(inputBox.value); e.preventDefault(); } }); inputBox.addEventListener('paste', ()=>{ setTimeout(()=>{ inputBox.value = inputBox.value.replace(/\u3000/g,' '); },50); }); }
+  const exampleButtons = document.querySelectorAll('.example-btn'); if (exampleButtons && exampleButtons.length){ exampleButtons.forEach(btn => { btn.addEventListener('click', ()=>{ const ex = btn.getAttribute('data-example'); if (ex) loadExample(ex); }); }); }
+  setTimeout(runSmokeTests, 50);
+}
+
+function runSmokeTests(){
+  const results = [];
+  results.push({name:'showBtn', ok: !!document.getElementById('showBtn')});
+  results.push({name:'inputBox', ok: !!document.getElementById('inputBox')});
+  results.push({name:'target', ok: !!document.getElementById('target')});
+  results.push({name:'handleInputRaw', ok: typeof handleInputRaw === 'function'});
+  results.push({name:'createCharacterCard', ok: typeof createCharacterCard === 'function'});
+  results.push({name:'speechSynthesis', ok: 'speechSynthesis' in window});
+  const diagEl = document.getElementById('diagResult');
+  if (diagEl){
+    const failed = results.filter(r=>!r.ok);
+    if (failed.length===0) { diagEl.textContent = '✅ System ready! All features available.'; diagEl.style.color = '#10b981'; diagEl.style.background = '#d1fae5'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; }
+    else { diagEl.textContent = '⚠️ Some features unavailable: ' + failed.map(f=>f.name).join(', '); diagEl.style.color = '#dc2626'; diagEl.style.background = '#fee'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; console.warn('Smoke test failures', failed); }
+  }
+  console.info('Smoke tests:', results);
+}
+
+window.addEventListener('error', function(e){ const libMsg = document.getElementById('libError'); if (!libMsg) return; if (e.message && e.message.toLowerCase().indexOf('script error') !== -1){ libMsg.style.display='block'; libMsg.textContent = 'A cross-origin script error occurred. This may indicate the external script failed to load. Please check your network connection.'; console.error('Captured Script error event', e); } else { console.error('Unhandled error', e.error || e.message || e); } });
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+</body>
+</html>
