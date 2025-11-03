@@ -464,6 +464,7 @@
         <input id="inputBox" type="text" placeholder="Type pinyin (e.g. nv3, ni3 hao3) or paste Chinese characters (你好世界)..." />
         <button id="showBtn" class="btn-primary">🔍 Search</button>
         <button id="animateAllBtn" class="btn-secondary">▶️ Animate All</button>
+        <button id="saveBtn" class="btn-accent" title="Save your characters">💾 Save</button>
         <button id="clearBtn" class="btn-danger">🗑️ Clear All</button>
       </div>
       <div id="pinyinShow"></div>
@@ -487,6 +488,7 @@
         <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
+        <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
       </div>
     </div>
 
@@ -511,19 +513,136 @@ let currentSpeech = null;
 
 function speakChinese(text) {
   if (!text) return;
-  if (currentSpeech) {
+  
+  console.log('Attempting to speak:', text);
+  
+  // Method 1: Try Web Speech API with mobile fixes
+  if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
+    
+    const speakWithVoices = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      // Get available voices
+      const voices = window.speechSynthesis.getVoices();
+      console.log('Available voices:', voices.length);
+      
+      // Try to find Chinese voice
+      const chineseVoice = voices.find(v => 
+        v.lang.includes('zh') || v.lang.includes('CN') || v.lang.includes('cmn')
+      );
+      
+      if (chineseVoice) {
+        utterance.voice = chineseVoice;
+        console.log('Using voice:', chineseVoice.name);
+      } else {
+        console.warn('No Chinese voice found, using default');
+      }
+      
+      utterance.onstart = () => console.log('Speech started');
+      utterance.onend = () => console.log('Speech ended');
+      utterance.onerror = (e) => {
+        console.error('Speech error:', e);
+        // Try alternative method
+        playAudioFallback(text);
+      };
+      
+      try {
+        window.speechSynthesis.speak(utterance);
+        console.log('Speech synthesis triggered');
+      } catch (e) {
+        console.error('Speech synthesis failed:', e);
+        playAudioFallback(text);
+      }
+    };
+    
+    // Load voices first (required for mobile)
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) {
+      console.log('Waiting for voices to load...');
+      window.speechSynthesis.onvoiceschanged = () => {
+        console.log('Voices loaded');
+        speakWithVoices();
+      };
+      // Timeout fallback
+      setTimeout(() => {
+        if (window.speechSynthesis.getVoices().length === 0) {
+          console.warn('Voices failed to load, trying fallback');
+          playAudioFallback(text);
+        }
+      }, 1000);
+    } else {
+      speakWithVoices();
+    }
+  } else {
+    console.warn('Speech synthesis not supported');
+    playAudioFallback(text);
   }
-  if (!('speechSynthesis' in window)) {
-    alert('Sorry, your browser does not support speech synthesis');
-    return;
+}
+
+// Method 2: Direct audio element with multiple TTS sources
+function playAudioFallback(text) {
+  console.log('Using audio fallback for:', text);
+  
+  // Create audio element
+  const audio = new Audio();
+  
+  // Try multiple TTS sources
+  const sources = [
+    `https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=${encodeURIComponent(text)}`,
+    `https://translate.google.com/translate_tts?ie=UTF-8&tl=zh&client=gtx&q=${encodeURIComponent(text)}`
+  ];
+  
+  let sourceIndex = 0;
+  
+  const tryNextSource = () => {
+    if (sourceIndex < sources.length) {
+      audio.src = sources[sourceIndex];
+      console.log('Trying audio source:', sourceIndex);
+      
+      audio.play()
+        .then(() => {
+          console.log('Audio playing successfully');
+        })
+        .catch(err => {
+          console.error('Audio playback failed:', err);
+          sourceIndex++;
+          if (sourceIndex < sources.length) {
+            setTimeout(tryNextSource, 100);
+          } else {
+            showAudioHelp();
+          }
+        });
+    } else {
+      showAudioHelp();
+    }
+  };
+  
+  audio.onerror = () => {
+    console.error('Audio load error');
+    sourceIndex++;
+    tryNextSource();
+  };
+  
+  tryNextSource();
+}
+
+function showAudioHelp() {
+  const msg = 'Audio not working? Try:\n\n' +
+    '1. Check phone volume is up\n' +
+    '2. Disable silent/vibrate mode\n' +
+    '3. Enable sound in Chrome settings\n' +
+    '4. Refresh the page and try again\n\n' +
+    'Note: Some Android devices need Chinese language support installed in system settings.';
+  
+  if (confirm(msg + '\n\nOpen Chrome audio settings help?')) {
+    window.open('https://support.google.com/chrome/answer/114662', '_blank');
   }
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'zh-CN';
-  utterance.rate = 0.8;
-  utterance.pitch = 1;
-  currentSpeech = utterance;
-  window.speechSynthesis.speak(utterance);
 }
 
 function addListenerIfExists(idOrEl, event, handler){
@@ -590,29 +709,289 @@ async function translateToEnglish(chineseText) {
 let writers = [];
 let writerInstance = null;
 let currentTargetChar = '';
+let currentStroke = 0;
+let totalStrokes = 0;
+let isStepMode = false;
 const meanings = { '你':{pinyin:'nǐ',meaning:'you'}, '好':{pinyin:'hǎo',meaning:'good'}, '爱':{pinyin:'ài',meaning:'love'}, '中':{pinyin:'zhōng',meaning:'China'}, '国':{pinyin:'guó',meaning:'country'}, '女':{pinyin:'nǚ',meaning:'woman/female'} };
+
+// Load saved characters on page load
+async function loadSavedCharacters() {
+  try {
+    const saved = localStorage.getItem('hanziCharacters');
+    if (!saved) {
+      console.log('No saved characters found');
+      return;
+    }
+    
+    const characters = JSON.parse(saved);
+    console.log('Loading saved characters:', characters);
+    
+    if (characters.length === 0) {
+      console.log('Character list is empty');
+      return;
+    }
+    
+    // Restore each character with proper async handling
+    for (const charData of characters) {
+      // Update meanings cache
+      if (charData.pinyin && charData.meaning) {
+        meanings[charData.char] = {
+          pinyin: charData.pinyin,
+          meaning: charData.meaning
+        };
+      }
+      // Recreate the card - await each one to ensure proper loading
+      await createCharacterCard(charData.char);
+      // Small delay to prevent overwhelming the browser
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    if (characters.length > 0) {
+      showNotification(`✅ Loaded ${characters.length} saved character(s)!`, 'success');
+    }
+  } catch (e) {
+    console.error('Error loading saved characters:', e);
+    showNotification('⚠️ Failed to load saved characters', 'error');
+  }
+}
+
+// Save current characters to localStorage
+function saveCharacters() {
+  try {
+    const charactersData = writers.map(w => ({
+      char: w.char,
+      pinyin: meanings[w.char]?.pinyin || '?',
+      meaning: meanings[w.char]?.meaning || 'unknown'
+    }));
+    
+    localStorage.setItem('hanziCharacters', JSON.stringify(charactersData));
+    console.log('Saved characters:', charactersData);
+    return true;
+  } catch (e) {
+    console.error('Error saving characters:', e);
+    showNotification('Failed to save. Storage might be full.', 'error');
+    return false;
+  }
+}
+
+// Manual save with notification
+function manualSave() {
+  if (writers.length === 0) {
+    alert('No characters to save! Add some characters first.');
+    return;
+  }
+  
+  if (saveCharacters()) {
+    showNotification(`💾 Saved ${writers.length} character(s)!`, 'success');
+  }
+}
+
+// Clear saved characters
+function clearSavedCharacters() {
+  try {
+    localStorage.removeItem('hanziCharacters');
+    console.log('Cleared saved characters from storage');
+  } catch (e) {
+    console.error('Error clearing saved characters:', e);
+  }
+}
+
+// Show notification to user
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    font-weight: 600;
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// Add animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
 
 async function renderCharacterInTarget(char){
   currentTargetChar = char;
+  currentStroke = 0;
+  isStepMode = false;
+  
   const container = document.getElementById('target');
   if (!container) { console.error('renderCharacterInTarget: #target not found'); return; }
   container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+  
+  // Update stroke controls
+  updateStrokeControls();
+  
   try{ await ensureHanziWriterLoaded(); }catch(e){ const msg = document.getElementById('libError'); if (msg){ msg.style.display='block'; msg.textContent = 'Unable to load HanziWriter library. Check network or CSP settings.'; } console.error('HanziWriter load failed', e); return; }
 
   try{
     if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API is not available');
     const size = Math.min(360, container.clientWidth - 40);
-    writerInstance = window.HanziWriter.create('hw', char, { width: size, height: size, padding:10, showOutline:true, showCharacter:true, strokeAnimationSpeed:1.5, delayBetweenStrokes:200 });
+    writerInstance = window.HanziWriter.create('hw', char, { 
+      width: size, 
+      height: size, 
+      padding:10, 
+      showOutline:true, 
+      showCharacter:false, // Don't show full character initially
+      strokeAnimationSpeed:1.5, 
+      delayBetweenStrokes:200 
+    });
+    
+    // Get total strokes
+    if (writerInstance._character && writerInstance._character.strokes) {
+      totalStrokes = writerInstance._character.strokes.length;
+    }
+    
     safeShowOrRender(writerInstance);
+    updateStrokeControls();
+    
     if (writerInstance && typeof writerInstance.animateCharacter === 'function'){
       setTimeout(()=>{ try{ writerInstance.animateCharacter(); }catch(e){ console.warn('animate failed', e); } }, 350);
     }
   }catch(e){ container.textContent = 'Unable to render stroke order (character data not available).'; console.error('renderCharacterInTarget error', e); }
 }
 
+// Show next stroke
+function showNextStroke() {
+  if (!writerInstance) {
+    alert('Please select a character first');
+    return;
+  }
+  
+  if (!isStepMode) {
+    // Enter step mode - hide character and start from beginning
+    isStepMode = true;
+    currentStroke = 0;
+    writerInstance.hideCharacter();
+    writerInstance.hideOutline();
+  }
+  
+  if (currentStroke < totalStrokes) {
+    writerInstance.animateStroke(currentStroke, {
+      onComplete: () => {
+        currentStroke++;
+        updateStrokeControls();
+      }
+    });
+  } else {
+    showNotification('All strokes completed! 🎉', 'success');
+  }
+}
+
+// Show previous stroke
+function showPreviousStroke() {
+  if (!writerInstance || !isStepMode) {
+    alert('Please enter step-by-step mode first by clicking "Next Stroke"');
+    return;
+  }
+  
+  if (currentStroke > 0) {
+    // Reset and replay up to previous stroke
+    currentStroke--;
+    writerInstance.hideCharacter();
+    
+    // Animate all strokes up to current one
+    for (let i = 0; i < currentStroke; i++) {
+      writerInstance.animateStroke(i, { duration: 200 });
+    }
+    
+    updateStrokeControls();
+  }
+}
+
+// Reset to beginning
+function resetStrokes() {
+  if (!writerInstance) {
+    alert('Please select a character first');
+    return;
+  }
+  
+  isStepMode = false;
+  currentStroke = 0;
+  writerInstance.hideCharacter();
+  writerInstance.showOutline();
+  updateStrokeControls();
+  
+  showNotification('Reset! Ready to practice. 🔄', 'info');
+}
+
+// Show all strokes at once
+function showAllStrokes() {
+  if (!writerInstance) {
+    alert('Please select a character first');
+    return;
+  }
+  
+  isStepMode = false;
+  currentStroke = totalStrokes;
+  writerInstance.showCharacter();
+  updateStrokeControls();
+}
+
+// Update stroke control buttons
+function updateStrokeControls() {
+  const strokeInfo = document.getElementById('strokeInfo');
+  const prevBtn = document.getElementById('prevStroke');
+  const nextBtn = document.getElementById('nextStroke');
+  
+  if (strokeInfo && totalStrokes > 0) {
+    strokeInfo.textContent = `Stroke ${currentStroke} / ${totalStrokes}`;
+    strokeInfo.style.display = 'block';
+  } else if (strokeInfo) {
+    strokeInfo.style.display = 'none';
+  }
+  
+  // Disable/enable buttons based on state
+  if (prevBtn) {
+    prevBtn.disabled = !isStepMode || currentStroke === 0;
+    prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+    prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
+  }
+  
+  if (nextBtn) {
+    nextBtn.disabled = isStepMode && currentStroke >= totalStrokes;
+    nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+    nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
+  }
+}
+
 async function createCharacterCard(char){
   const grid = document.getElementById('character-grid');
   if (!grid){ console.error('createCharacterCard: #character-grid not found'); return; }
+  
+  // Check if character already exists
+  const existingCard = writers.find(w => w.char === char);
+  if (existingCard) {
+    console.log('Character already exists:', char);
+    return;
+  }
+  
   const card = document.createElement('div'); card.className='character-card';
   const id = 'card-'+char+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);
   const canvasDiv = document.createElement('div'); canvasDiv.className='char-canvas'; canvasDiv.id=id; canvasDiv.style.width='150px'; canvasDiv.style.height='150px'; canvasDiv.style.margin='0 auto';
@@ -632,7 +1011,20 @@ async function createCharacterCard(char){
   buttons.className='card-buttons'; 
   buttons.innerHTML = `<button onclick="animateCard('${id}')" class="btn-primary">▶️ Play</button><button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button><button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button>`;
   card.appendChild(canvasDiv); card.appendChild(infoDiv); card.appendChild(buttons); grid.appendChild(card);
-  try{ await ensureHanziWriterLoaded(); if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API not available'); const w = window.HanziWriter.create(id, char, { width:150, height:150, padding:5, showOutline:true, strokeAnimationSpeed:2, delayBetweenStrokes:200 }); safeShowOrRender(w); writers.push({id, writer:w, char}); }catch(e){ console.error('createCharacterCard error', e); }
+  try{ 
+    await ensureHanziWriterLoaded(); 
+    if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API not available'); 
+    const w = window.HanziWriter.create(id, char, { width:150, height:150, padding:5, showOutline:true, strokeAnimationSpeed:2, delayBetweenStrokes:200 }); 
+    safeShowOrRender(w); 
+    writers.push({id, writer:w, char}); 
+    
+    // Auto-save after adding character (but not during initial load)
+    if (document.readyState === 'complete') {
+      saveCharacters();
+    }
+  }catch(e){ 
+    console.error('createCharacterCard error', e); 
+  }
 }
 
 function animateCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter(); }
@@ -682,12 +1074,61 @@ async function handleInputRaw(raw){
 function loadExample(text){ const input = document.getElementById('inputBox'); if (input){ input.value = text; handleInputRaw(text); } }
 
 function init(){
+  // Load saved characters first
+  loadSavedCharacters();
+  
   addListenerIfExists('showBtn', 'click', ()=> handleInputRaw(document.getElementById('inputBox') ? document.getElementById('inputBox').value : ''));
   addListenerIfExists('animateAllBtn', 'click', ()=>{ if (writers.length===0){ alert('Please add some characters first!'); return; } writers.forEach((w, idx)=>{ setTimeout(()=>{ try{ if (w.writer && typeof w.writer.animateCharacter==='function') w.writer.animateCharacter(); }catch(e){} }, idx*1200); }); });
-  addListenerIfExists('clearBtn', 'click', ()=>{ const grid = document.getElementById('character-grid'); if (grid) grid.innerHTML=''; const cand = document.getElementById('candidates'); if (cand) cand.innerHTML=''; const target = document.getElementById('target'); if (target) target.innerHTML='<div style="text-align: center; padding: 2rem;"><div style="font-size: 3rem; margin-bottom: 1rem;">🖌️</div><div>Select a character to view stroke order animation</div></div>'; const pinyin = document.getElementById('pinyinShow'); if (pinyin) pinyin.textContent=''; const input = document.getElementById('inputBox'); if (input) input.value=''; writers=[]; writerInstance=null; currentTargetChar=''; const msg=document.getElementById('libError'); if (msg){ msg.style.display='none'; msg.textContent=''; } });
-  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') writerInstance.animateCharacter(); else alert('Please select a character first'); });
-  addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) alert('Great! 🎉'); else alert('Try again! 💪'); }}); } else alert('Please select a character first'); });
+  addListenerIfExists('saveBtn', 'click', ()=>{ 
+    if (writers.length === 0) {
+      alert('No characters to save! Add some characters first.');
+      return;
+    }
+    saveCharacters();
+  });
+  addListenerIfExists('clearBtn', 'click', ()=>{ 
+    if (writers.length === 0) {
+      alert('No characters to clear!');
+      return;
+    }
+    if (confirm('Clear all characters? This will also delete your saved collection.')) {
+      const grid = document.getElementById('character-grid'); 
+      if (grid) grid.innerHTML=''; 
+      const cand = document.getElementById('candidates'); 
+      if (cand) cand.innerHTML=''; 
+      const target = document.getElementById('target'); 
+      if (target) target.innerHTML='<div style="text-align: center; padding: 2rem;"><div style="font-size: 3rem; margin-bottom: 1rem;">🖌️</div><div>Select a character to view stroke order animation</div></div>'; 
+      const pinyin = document.getElementById('pinyinShow'); 
+      if (pinyin) pinyin.textContent=''; 
+      const input = document.getElementById('inputBox'); 
+      if (input) input.value=''; 
+      writers=[]; 
+      writerInstance=null; 
+      currentTargetChar=''; 
+      const msg=document.getElementById('libError'); 
+      if (msg){ msg.style.display='none'; msg.textContent=''; }
+      clearSavedCharacters();
+    }
+  });
+  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
+  addListenerIfExists('testAudio', 'click', ()=>{ 
+    const testText = '你好';
+    console.log('=== AUDIO TEST START ===');
+    console.log('Testing with:', testText);
+    console.log('Speech API available:', 'speechSynthesis' in window);
+    console.log('Audio API available:', typeof Audio !== 'undefined');
+    
+    if ('speechSynthesis' in window) {
+      const voices = window.speechSynthesis.getVoices();
+      console.log('Total voices:', voices.length);
+      console.log('Chinese voices:', voices.filter(v => v.lang.includes('zh')).map(v => v.name));
+    }
+    
+    alert('Audio test starting... Check console logs (Chrome DevTools) for details.\n\nYou should hear "你好" (hello) now.');
+    speakChinese(testText);
+  });
   const inputBox = document.getElementById('inputBox'); if (inputBox){ inputBox.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ handleInputRaw(inputBox.value); e.preventDefault(); } }); inputBox.addEventListener('paste', ()=>{ setTimeout(()=>{ inputBox.value = inputBox.value.replace(/\u3000/g,' '); },50); }); }
   const exampleButtons = document.querySelectorAll('.example-btn'); if (exampleButtons && exampleButtons.length){ exampleButtons.forEach(btn => { btn.addEventListener('click', ()=>{ const ex = btn.getAttribute('data-example'); if (ex) loadExample(ex); }); }); }
   setTimeout(runSmokeTests, 50);
