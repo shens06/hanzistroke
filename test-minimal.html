@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal Animation Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 12px;
+      border: none;
+      color: white;
+      font-weight: bold;
+    }
+    .btn-primary { background: #6366f1; }
+    .btn-slow { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    #target {
+      width: 100%;
+      max-width: 400px;
+      height: 400px;
+      margin: 20px auto;
+      border: 3px solid #6366f1;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
+    }
+    .message {
+      margin: 20px 0;
+      padding: 15px;
+      background: #d1fae5;
+      border-radius: 8px;
+      color: #065f46;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Animation Button Test</h1>
+
+  <div class="message" id="message">
+    Click a character below, then test the buttons
+  </div>
+
+  <div>
+    <button onclick="selectChar('你')" style="font-size: 24px; padding: 10px 20px;">你</button>
+    <button onclick="selectChar('好')" style="font-size: 24px; padding: 10px 20px;">好</button>
+    <button onclick="selectChar('爱')" style="font-size: 24px; padding: 10px 20px;">爱</button>
+  </div>
+
+  <div id="target">
+    <div style="color: #9ca3af;">Select a character above</div>
+  </div>
+
+  <div>
+    <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
+    <button id="animateTargetSlow" class="btn-slow">🐌 Slow Motion</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
+  <script>
+    let currentChar = '';
+    let writerInstance = null;
+
+    function updateMessage(msg) {
+      document.getElementById('message').textContent = msg;
+    }
+
+    function selectChar(char) {
+      currentChar = char;
+      updateMessage('Selected: ' + char + ' - Now click a button below');
+
+      // Create initial display
+      const container = document.getElementById('target');
+      container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+
+      writerInstance = HanziWriter.create('hw', char, {
+        width: 360,
+        height: 360,
+        padding: 10,
+        showOutline: true,
+        showCharacter: true
+      });
+    }
+
+    // Normal Speed Button
+    document.getElementById('animateTarget').addEventListener('click', function() {
+      if (!currentChar) {
+        alert('Please select a character first');
+        return;
+      }
+
+      updateMessage('▶️ Playing NORMAL speed for: ' + currentChar);
+
+      const container = document.getElementById('target');
+      container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+
+      writerInstance = HanziWriter.create('hw', currentChar, {
+        width: 360,
+        height: 360,
+        padding: 10,
+        showOutline: true,
+        showCharacter: false,
+        strokeAnimationSpeed: 1.5,
+        delayBetweenStrokes: 200
+      });
+
+      setTimeout(() => {
+        writerInstance.animateCharacter();
+        updateMessage('▶️ NORMAL speed playing! (fast)');
+      }, 100);
+    });
+
+    // Slow Motion Button
+    document.getElementById('animateTargetSlow').addEventListener('click', function() {
+      if (!currentChar) {
+        alert('Please select a character first');
+        return;
+      }
+
+      updateMessage('🐌 Playing SLOW MOTION for: ' + currentChar);
+
+      const container = document.getElementById('target');
+      container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+
+      writerInstance = HanziWriter.create('hw', currentChar, {
+        width: 360,
+        height: 360,
+        padding: 10,
+        showOutline: true,
+        showCharacter: false,
+        strokeAnimationSpeed: 0.2,
+        delayBetweenStrokes: 1500
+      });
+
+      setTimeout(() => {
+        writerInstance.animateCharacter();
+        updateMessage('🐌 SLOW MOTION playing! (very slow with pauses)');
+      }, 100);
+    });
+
+    // On load check
+    window.addEventListener('DOMContentLoaded', function() {
+      const normalBtn = document.getElementById('animateTarget');
+      const slowBtn = document.getElementById('animateTargetSlow');
+
+      if (normalBtn && slowBtn) {
+        updateMessage('✅ Page loaded! Both buttons found. Select a character above.');
+      } else {
+        updateMessage('❌ ERROR: Buttons not found!');
+      }
+    });
+  </script>
+</body>
+</html>
