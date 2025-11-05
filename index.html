@@ -232,36 +232,6 @@
     background: white;
   }
   
-  .stroke-controls {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-    border-radius: 12px;
-    border: 2px dashed var(--border);
-    position: relative;
-  }
-
-  .stroke-controls button {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .stroke-hint {
-    width: 100%;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    border-radius: 8px;
-    font-weight: 500;
-  }
-
   .viewer-buttons {
     display: flex;
     gap: 0.75rem;
@@ -678,28 +648,11 @@
         </div>
       </div>
 
-      <!-- Stroke Progress Indicator -->
-      <div id="strokeInfo" style="display: none; text-align: center; font-size: 1.125rem; font-weight: 600; color: var(--primary); margin: 1rem 0; padding: 0.5rem; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 8px;">
-        Stroke 0 / 0
-      </div>
-
-      <!-- Step-by-Step Stroke Controls -->
-      <div class="stroke-controls">
-        <div class="stroke-hint" id="stroke-hint">
-          💡 Select a character to use step-by-step controls
-        </div>
-        <button id="resetStroke" class="btn-outline" onclick="resetStrokes()" title="Reset to beginning">🔄 Reset</button>
-        <button id="prevStroke" class="btn-secondary" onclick="showPreviousStroke()" title="Previous stroke">⬅️ Previous</button>
-        <button id="nextStroke" class="btn-primary" onclick="showNextStroke()" title="Next stroke">➡️ Next Stroke</button>
-        <button id="showAll" class="btn-accent" onclick="showAllStrokes()" title="Show complete character">👁️ Show All</button>
-      </div>
-
       <!-- Main Action Buttons -->
       <div class="viewer-buttons">
         <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
-        <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
       </div>
     </div>
 
@@ -956,9 +909,6 @@ async function translateToEnglish(chineseText) {
 let writers = [];
 let writerInstance = null;
 let currentTargetChar = '';
-let currentStroke = 0;
-let totalStrokes = 0;
-let isStepMode = false;
 const meanings = { '你':{pinyin:'nǐ',meaning:'you'}, '好':{pinyin:'hǎo',meaning:'good'}, '爱':{pinyin:'ài',meaning:'love'}, '中':{pinyin:'zhōng',meaning:'China'}, '国':{pinyin:'guó',meaning:'country'}, '女':{pinyin:'nǚ',meaning:'woman/female'} };
 
 // Character Categories Data
@@ -1304,171 +1254,32 @@ document.head.appendChild(style);
 
 async function renderCharacterInTarget(char){
   currentTargetChar = char;
-  currentStroke = 0;
-  isStepMode = false;
-  
+
   const container = document.getElementById('target');
   if (!container) { console.error('renderCharacterInTarget: #target not found'); return; }
   container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
-  
-  // Update stroke controls
-  updateStrokeControls();
-  
+
   try{ await ensureHanziWriterLoaded(); }catch(e){ const msg = document.getElementById('libError'); if (msg){ msg.style.display='block'; msg.textContent = 'Unable to load HanziWriter library. Check network or CSP settings.'; } console.error('HanziWriter load failed', e); return; }
 
   try{
     if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API is not available');
     const size = Math.min(360, container.clientWidth - 40);
-    writerInstance = window.HanziWriter.create('hw', char, { 
-      width: size, 
-      height: size, 
-      padding:10, 
-      showOutline:true, 
-      showCharacter:false, // Don't show full character initially
-      strokeAnimationSpeed:1.5, 
-      delayBetweenStrokes:200 
+    writerInstance = window.HanziWriter.create('hw', char, {
+      width: size,
+      height: size,
+      padding:10,
+      showOutline:true,
+      showCharacter:true,
+      strokeAnimationSpeed:1.5,
+      delayBetweenStrokes:200
     });
-    
-    // Get total strokes
-    if (writerInstance._character && writerInstance._character.strokes) {
-      totalStrokes = writerInstance._character.strokes.length;
-    }
-    
+
     safeShowOrRender(writerInstance);
-    updateStrokeControls();
-    
+
     if (writerInstance && typeof writerInstance.animateCharacter === 'function'){
       setTimeout(()=>{ try{ writerInstance.animateCharacter(); }catch(e){ console.warn('animate failed', e); } }, 350);
     }
   }catch(e){ container.textContent = 'Unable to render stroke order (character data not available).'; console.error('renderCharacterInTarget error', e); }
-}
-
-// Show next stroke
-function showNextStroke() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  if (!isStepMode) {
-    // Enter step mode - hide character and start from beginning
-    isStepMode = true;
-    currentStroke = 0;
-    writerInstance.hideCharacter();
-    writerInstance.hideOutline();
-  }
-  
-  if (currentStroke < totalStrokes) {
-    writerInstance.animateStroke(currentStroke, {
-      onComplete: () => {
-        currentStroke++;
-        updateStrokeControls();
-      }
-    });
-  } else {
-    showNotification('All strokes completed! 🎉', 'success');
-  }
-}
-
-// Show previous stroke
-function showPreviousStroke() {
-  if (!writerInstance || !isStepMode) {
-    alert('Please enter step-by-step mode first by clicking "Next Stroke"');
-    return;
-  }
-  
-  if (currentStroke > 0) {
-    // Reset and replay up to previous stroke
-    currentStroke--;
-    writerInstance.hideCharacter();
-    
-    // Animate all strokes up to current one
-    for (let i = 0; i < currentStroke; i++) {
-      writerInstance.animateStroke(i, { duration: 200 });
-    }
-    
-    updateStrokeControls();
-  }
-}
-
-// Reset to beginning
-function resetStrokes() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  isStepMode = false;
-  currentStroke = 0;
-  writerInstance.hideCharacter();
-  writerInstance.showOutline();
-  updateStrokeControls();
-  
-  showNotification('Reset! Ready to practice. 🔄', 'info');
-}
-
-// Show all strokes at once
-function showAllStrokes() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  isStepMode = false;
-  currentStroke = totalStrokes;
-  writerInstance.showCharacter();
-  updateStrokeControls();
-}
-
-// Update stroke control buttons
-function updateStrokeControls() {
-  const strokeInfo = document.getElementById('strokeInfo');
-  const strokeHint = document.getElementById('stroke-hint');
-  const prevBtn = document.getElementById('prevStroke');
-  const nextBtn = document.getElementById('nextStroke');
-  const resetBtn = document.getElementById('resetStroke');
-  const showAllBtn = document.getElementById('showAll');
-
-  const hasChar = totalStrokes > 0;
-
-  // Show/hide hint message
-  if (strokeHint) {
-    strokeHint.style.display = hasChar ? 'none' : 'block';
-  }
-
-  if (strokeInfo) {
-    if (hasChar) {
-      strokeInfo.textContent = `Stroke ${currentStroke} / ${totalStrokes}`;
-      strokeInfo.style.display = 'block';
-    } else {
-      strokeInfo.style.display = 'none';
-    }
-  }
-
-  // Disable/enable buttons based on state
-  if (prevBtn) {
-    prevBtn.disabled = !isStepMode || currentStroke === 0;
-    prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
-    prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
-  }
-
-  if (nextBtn) {
-    nextBtn.disabled = (isStepMode && currentStroke >= totalStrokes) || !hasChar;
-    nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
-    nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
-  }
-
-  if (resetBtn) {
-    resetBtn.disabled = !hasChar || (!isStepMode && currentStroke === 0);
-    resetBtn.style.opacity = resetBtn.disabled ? '0.5' : '1';
-    resetBtn.style.cursor = resetBtn.disabled ? 'not-allowed' : 'pointer';
-  }
-
-  if (showAllBtn) {
-    showAllBtn.disabled = !hasChar;
-    showAllBtn.style.opacity = showAllBtn.disabled ? '0.5' : '1';
-    showAllBtn.style.cursor = showAllBtn.disabled ? 'not-allowed' : 'pointer';
-  }
 }
 
 async function createCharacterCard(char){
@@ -1632,9 +1443,6 @@ function init(){
   // Update stats on load
   updateCollectionStats();
 
-  // Initialize stroke controls
-  updateStrokeControls();
-
   addListenerIfExists('showBtn', 'click', ()=> handleInputRaw(document.getElementById('inputBox') ? document.getElementById('inputBox').value : ''));
   addListenerIfExists('animateAllBtn', 'click', ()=>{ if (writers.length===0){ alert('Please add some characters first!'); return; } writers.forEach((w, idx)=>{ setTimeout(()=>{ try{ if (w.writer && typeof w.writer.animateCharacter==='function') w.writer.animateCharacter(); }catch(e){} }, idx*1200); }); });
   addListenerIfExists('saveBtn', 'click', ()=>{ 
@@ -1673,10 +1481,9 @@ function init(){
       clearSavedCharacters();
       updateCollectionStats();
       updateCategoryDisplay();
-      updateStrokeControls();
     }
   });
-  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { writerInstance.animateCharacter(); } else alert('Please select a character first'); });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
