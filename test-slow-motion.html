@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test Slow Motion</title>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
+<style>
+body { font-family: Arial; padding: 20px; }
+.container { display: flex; gap: 40px; }
+.test-box { border: 2px solid #333; padding: 20px; }
+button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+</style>
+</head>
+<body>
+<h1>HanziWriter Slow Motion Test</h1>
+
+<div class="container">
+  <div class="test-box">
+    <h3>Normal Speed</h3>
+    <div id="normal" style="width:200px;height:200px;border:1px solid #ccc;"></div>
+    <button onclick="playNormal()">▶️ Play Normal</button>
+    <p>Speed: 1.0, Delay: 200ms</p>
+  </div>
+
+  <div class="test-box">
+    <h3>Slow Motion</h3>
+    <div id="slow" style="width:200px;height:200px;border:1px solid #ccc;"></div>
+    <button onclick="playSlow()">🐌 Play Slow</button>
+    <p>Speed: 0.2, Delay: 1500ms</p>
+  </div>
+</div>
+
+<div style="margin-top: 30px; padding: 20px; background: #f0f0f0;">
+  <h3>Console Output:</h3>
+  <div id="console" style="font-family: monospace; white-space: pre-wrap;"></div>
+</div>
+
+<script>
+let normalWriter, slowWriter;
+
+function log(msg) {
+  const console = document.getElementById('console');
+  console.textContent += new Date().toLocaleTimeString() + ': ' + msg + '\n';
+  window.console.log(msg);
+}
+
+// Create writers on load
+window.onload = function() {
+  log('Creating normal speed writer...');
+  normalWriter = HanziWriter.create('normal', '永', {
+    width: 200,
+    height: 200,
+    padding: 10,
+    showOutline: true,
+    showCharacter: false,
+    strokeAnimationSpeed: 1.0,
+    delayBetweenStrokes: 200
+  });
+  log('Normal writer created');
+
+  log('Creating slow motion writer...');
+  slowWriter = HanziWriter.create('slow', '永', {
+    width: 200,
+    height: 200,
+    padding: 10,
+    showOutline: true,
+    showCharacter: false,
+    strokeAnimationSpeed: 0.2,
+    delayBetweenStrokes: 1500
+  });
+  log('Slow writer created');
+
+  log('Ready! Click buttons to compare speeds.');
+};
+
+function playNormal() {
+  log('Playing NORMAL animation...');
+  normalWriter.animateCharacter({
+    onComplete: () => log('Normal animation COMPLETE')
+  });
+}
+
+function playSlow() {
+  log('Playing SLOW animation...');
+  slowWriter.animateCharacter({
+    onComplete: () => log('Slow animation COMPLETE')
+  });
+}
+</script>
+</body>
+</html>
