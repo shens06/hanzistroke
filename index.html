@@ -717,6 +717,36 @@
   </div>
 
 <script>
+// CRITICAL: Define this function FIRST so it's always available
+function testPlayButton() {
+  alert('✅ Button clicked! Testing animation...');
+  console.log('testPlayButton called');
+
+  // Check if writerInstance exists
+  if (typeof writerInstance === 'undefined' || !writerInstance) {
+    alert('❌ ERROR: No writer instance found. Please select a character first.');
+    return;
+  }
+
+  console.log('writerInstance exists:', writerInstance);
+
+  // Check if animateCharacter function exists
+  if (typeof writerInstance.animateCharacter !== 'function') {
+    alert('❌ ERROR: animateCharacter function not available.');
+    return;
+  }
+
+  // Try to call animation
+  try {
+    console.log('Calling animateCharacter...');
+    writerInstance.animateCharacter();
+    alert('✅ SUCCESS! Animation called!');
+  } catch (e) {
+    alert('❌ ERROR: ' + e.message);
+    console.error('Animation error:', e);
+  }
+}
+
 let currentSpeech = null;
 
 function speakChinese(text) {
@@ -1555,31 +1585,6 @@ async function handleInputRaw(raw){
 }
 
 function loadExample(text){ const input = document.getElementById('inputBox'); if (input){ input.value = text; handleInputRaw(text); } }
-
-function testPlayButton() {
-  alert('Button clicked! Testing animation...');
-  console.log('testPlayButton called');
-  console.log('writerInstance:', writerInstance);
-  console.log('currentTargetChar:', currentTargetChar);
-
-  if (!writerInstance) {
-    alert('ERROR: No writer instance found. Please select a character first.');
-    return;
-  }
-
-  if (typeof writerInstance.animateCharacter !== 'function') {
-    alert('ERROR: animateCharacter function not available on writer instance.');
-    return;
-  }
-
-  try {
-    writerInstance.animateCharacter();
-    alert('SUCCESS: Animation called!');
-  } catch (e) {
-    alert('ERROR: ' + e.message);
-    console.error('Animation error:', e);
-  }
-}
 
 function init(){
   // Load saved data first
