@@ -1601,7 +1601,21 @@ function init(){
       updateCategoryDisplay();
     }
   });
-  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('animateTarget', 'click', ()=>{
+    if (!currentTargetChar) {
+      alert('Please select a character first');
+      return;
+    }
+    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      isStepMode = false;
+      currentStroke = 0;
+      writerInstance.showOutline();
+      writerInstance.animateCharacter();
+      showNotification('▶️ Playing normal speed animation', 'info');
+    } else {
+      alert('Animation not ready. Please wait or select a character again.');
+    }
+  });
   addListenerIfExists('animateTargetSlow', 'click', async ()=>{
     if (!currentTargetChar) {
       alert('Please select a character first');
@@ -1691,6 +1705,8 @@ function runSmokeTests(){
   results.push({name:'showBtn', ok: !!document.getElementById('showBtn')});
   results.push({name:'inputBox', ok: !!document.getElementById('inputBox')});
   results.push({name:'target', ok: !!document.getElementById('target')});
+  results.push({name:'animateTarget', ok: !!document.getElementById('animateTarget')});
+  results.push({name:'animateTargetSlow', ok: !!document.getElementById('animateTargetSlow')});
   results.push({name:'handleInputRaw', ok: typeof handleInputRaw === 'function'});
   results.push({name:'createCharacterCard', ok: typeof createCharacterCard === 'function'});
   results.push({name:'speechSynthesis', ok: 'speechSynthesis' in window});
@@ -1701,6 +1717,14 @@ function runSmokeTests(){
     else { diagEl.textContent = '⚠️ Some features unavailable: ' + failed.map(f=>f.name).join(', '); diagEl.style.color = '#dc2626'; diagEl.style.background = '#fee'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; console.warn('Smoke test failures', failed); }
   }
   console.info('Smoke tests:', results);
+
+  // Alert if animation buttons missing
+  if (!document.getElementById('animateTarget')) {
+    alert('Warning: Normal Speed button not found!');
+  }
+  if (!document.getElementById('animateTargetSlow')) {
+    alert('Warning: Slow Motion button not found!');
+  }
 }
 
 window.addEventListener('error', function(e){ const libMsg = document.getElementById('libError'); if (!libMsg) return; if (e.message && e.message.toLowerCase().indexOf('script error') !== -1){ libMsg.style.display='block'; libMsg.textContent = 'A cross-origin script error occurred. This may indicate the external script failed to load. Please check your network connection.'; console.error('Captured Script error event', e); } else { console.error('Unhandled error', e.error || e.message || e); } });
