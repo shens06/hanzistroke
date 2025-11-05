@@ -658,7 +658,7 @@
         </div>
       </div>
       <div class="viewer-buttons">
-        <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
+        <button id="animateTarget" class="btn-primary" onclick="testPlayButton()">▶️ Play Animation</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
         <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
@@ -1555,6 +1555,31 @@ async function handleInputRaw(raw){
 }
 
 function loadExample(text){ const input = document.getElementById('inputBox'); if (input){ input.value = text; handleInputRaw(text); } }
+
+function testPlayButton() {
+  alert('Button clicked! Testing animation...');
+  console.log('testPlayButton called');
+  console.log('writerInstance:', writerInstance);
+  console.log('currentTargetChar:', currentTargetChar);
+
+  if (!writerInstance) {
+    alert('ERROR: No writer instance found. Please select a character first.');
+    return;
+  }
+
+  if (typeof writerInstance.animateCharacter !== 'function') {
+    alert('ERROR: animateCharacter function not available on writer instance.');
+    return;
+  }
+
+  try {
+    writerInstance.animateCharacter();
+    alert('SUCCESS: Animation called!');
+  } catch (e) {
+    alert('ERROR: ' + e.message);
+    console.error('Animation error:', e);
+  }
+}
 
 function init(){
   // Load saved data first
