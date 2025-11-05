@@ -224,6 +224,8 @@
     color: var(--text-secondary);
     font-size: 1.125rem;
     transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
   }
   
   #target:has(#hw) {
@@ -574,34 +576,50 @@
     body {
       padding: 1rem;
     }
-    
+
     .header h1 {
       font-size: 2rem;
     }
-    
+
     .card {
-      padding: 1.5rem;
+      padding: 1rem;
     }
-    
+
     .input-section {
       flex-direction: column;
     }
-    
+
     input[type="text"] {
       width: 100%;
     }
-    
+
     button {
       width: 100%;
       justify-content: center;
     }
-    
+
     #target {
-      height: 300px;
+      height: auto;
+      min-height: 280px;
+      max-width: calc(100vw - 2rem);
+      padding: 0.5rem;
+      margin: 1rem auto;
     }
-    
+
+    #hw {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      width: auto !important;
+      height: auto !important;
+    }
+
     #character-grid {
       grid-template-columns: 1fr;
+    }
+
+    .viewer-buttons button {
+      font-size: 0.85rem;
+      padding: 0.75rem 1rem;
     }
   }
 </style>
@@ -1217,37 +1235,41 @@ async function renderCharacterInTarget(char){
   currentTargetChar = char;
   currentStroke = 0;
   isStepMode = false;
-  
+
   const container = document.getElementById('target');
   if (!container) { console.error('renderCharacterInTarget: #target not found'); return; }
-  container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
-  
+
+  // Calculate responsive size
+  const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
+
+  container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
+
   // Update stroke controls
   updateStrokeControls();
-  
+
   try{ await ensureHanziWriterLoaded(); }catch(e){ const msg = document.getElementById('libError'); if (msg){ msg.style.display='block'; msg.textContent = 'Unable to load HanziWriter library. Check network or CSP settings.'; } console.error('HanziWriter load failed', e); return; }
 
   try{
     if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API is not available');
-    const size = Math.min(360, container.clientWidth - 40);
-    writerInstance = window.HanziWriter.create('hw', char, { 
-      width: size, 
-      height: size, 
-      padding:10, 
-      showOutline:true, 
+    const size = maxSize;
+    writerInstance = window.HanziWriter.create('hw', char, {
+      width: size,
+      height: size,
+      padding:10,
+      showOutline:true,
       showCharacter:false, // Don't show full character initially
-      strokeAnimationSpeed:1.5, 
-      delayBetweenStrokes:200 
+      strokeAnimationSpeed:1.5,
+      delayBetweenStrokes:200
     });
-    
+
     // Get total strokes
     if (writerInstance._character && writerInstance._character.strokes) {
       totalStrokes = writerInstance._character.strokes.length;
     }
-    
+
     safeShowOrRender(writerInstance);
     updateStrokeControls();
-    
+
     if (writerInstance && typeof writerInstance.animateCharacter === 'function'){
       setTimeout(()=>{ try{ writerInstance.animateCharacter(); }catch(e){ console.warn('animate failed', e); } }, 350);
     }
@@ -1571,11 +1593,14 @@ function init(){
     const container = document.getElementById('target');
     if (!container) return;
 
-    container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+    // Calculate responsive size
+    const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
+
+    container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
 
     try {
       await ensureHanziWriterLoaded();
-      const size = Math.min(360, container.clientWidth - 40);
+      const size = maxSize;
 
       console.log('Slow motion for:', currentTargetChar, 'speed: 0.2, delay: 1500');
 
