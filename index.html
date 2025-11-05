@@ -913,7 +913,6 @@ async function ensureHanziWriterLoaded(){
 
       if (typeof window.HanziWriter !== 'undefined') {
         console.log(`✅ HanziWriter loaded successfully from CDN #${i + 1}`);
-        showNotification('✅ Library loaded successfully!', 'success');
         return;
       }
     } catch (e) {
@@ -1680,11 +1679,13 @@ function runSmokeTests(){
   results.push({name:'handleInputRaw', ok: typeof handleInputRaw === 'function'});
   results.push({name:'createCharacterCard', ok: typeof createCharacterCard === 'function'});
   results.push({name:'speechSynthesis', ok: 'speechSynthesis' in window});
-  const diagEl = document.getElementById('diagResult');
-  if (diagEl){
-    const failed = results.filter(r=>!r.ok);
-    if (failed.length===0) { diagEl.textContent = '✅ System ready! All features available.'; diagEl.style.color = '#10b981'; diagEl.style.background = '#d1fae5'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; }
-    else { diagEl.textContent = '⚠️ Some features unavailable: ' + failed.map(f=>f.name).join(', '); diagEl.style.color = '#dc2626'; diagEl.style.background = '#fee'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; console.warn('Smoke test failures', failed); }
+
+  // Only log to console, don't show visual diagnostic messages
+  const failed = results.filter(r=>!r.ok);
+  if (failed.length > 0) {
+    console.warn('Some features unavailable:', failed.map(f=>f.name).join(', '));
+  } else {
+    console.info('All features available');
   }
   console.info('Smoke tests:', results);
 }
