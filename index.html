@@ -658,8 +658,7 @@
         </div>
       </div>
       <div class="viewer-buttons">
-        <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
-        <button id="animateTargetSlow" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🐌 Slow Motion</button>
+        <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
         <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
@@ -1677,67 +1676,6 @@ function init(){
       alert('Error: ' + e.message);
     }
   });
-  addListenerIfExists('animateTargetSlow', 'click', async ()=>{
-    if (!currentTargetChar) {
-      alert('Please select a character first');
-      return;
-    }
-
-    showNotification('🐌 Starting slow motion...', 'info');
-
-    const container = document.getElementById('target');
-    if (!container) {
-      alert('Error: Container not found');
-      return;
-    }
-
-    try {
-      // Calculate responsive size
-      const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
-
-      // Clear and recreate container
-      container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
-
-      // Ensure HanziWriter is loaded
-      await ensureHanziWriterLoaded();
-
-      if (!window.HanziWriter) {
-        alert('Error: HanziWriter library not loaded');
-        return;
-      }
-
-      // Create new writer instance with VERY SLOW settings
-      writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
-        width: maxSize,
-        height: maxSize,
-        padding: 10,
-        showOutline: true,
-        showCharacter: false,  // Hide to see strokes appear progressively
-        strokeAnimationSpeed: 0.2,   // VERY slow (5x slower than normal)
-        delayBetweenStrokes: 1500     // 1.5 second pause between strokes
-      });
-
-      // Show character outline first
-      if (writerInstance) {
-        safeShowOrRender(writerInstance);
-
-        // Start slow animation
-        setTimeout(() => {
-          if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
-            writerInstance.animateCharacter();
-            showNotification('🐌 Slow motion playing! Watch carefully...', 'success');
-          } else {
-            alert('Error: Animation function not available');
-          }
-        }, 100);
-      } else {
-        alert('Error: Failed to create writer instance');
-      }
-    } catch (e) {
-      alert('Error: ' + e.message);
-      showNotification('❌ Failed: ' + e.message, 'error');
-    }
-  });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
@@ -1767,7 +1705,6 @@ function runSmokeTests(){
   results.push({name:'inputBox', ok: !!document.getElementById('inputBox')});
   results.push({name:'target', ok: !!document.getElementById('target')});
   results.push({name:'animateTarget', ok: !!document.getElementById('animateTarget')});
-  results.push({name:'animateTargetSlow', ok: !!document.getElementById('animateTargetSlow')});
   results.push({name:'handleInputRaw', ok: typeof handleInputRaw === 'function'});
   results.push({name:'createCharacterCard', ok: typeof createCharacterCard === 'function'});
   results.push({name:'speechSynthesis', ok: 'speechSynthesis' in window});
@@ -1778,14 +1715,6 @@ function runSmokeTests(){
     else { diagEl.textContent = '⚠️ Some features unavailable: ' + failed.map(f=>f.name).join(', '); diagEl.style.color = '#dc2626'; diagEl.style.background = '#fee'; diagEl.style.padding = '0.75rem 1rem'; diagEl.style.borderRadius = '8px'; console.warn('Smoke test failures', failed); }
   }
   console.info('Smoke tests:', results);
-
-  // Alert if animation buttons missing
-  if (!document.getElementById('animateTarget')) {
-    alert('Warning: Normal Speed button not found!');
-  }
-  if (!document.getElementById('animateTargetSlow')) {
-    alert('Warning: Slow Motion button not found!');
-  }
 }
 
 window.addEventListener('error', function(e){ const libMsg = document.getElementById('libError'); if (!libMsg) return; if (e.message && e.message.toLowerCase().indexOf('script error') !== -1){ libMsg.style.display='block'; libMsg.textContent = 'A cross-origin script error occurred. This may indicate the external script failed to load. Please check your network connection.'; console.error('Captured Script error event', e); } else { console.error('Unhandled error', e.error || e.message || e); } });
