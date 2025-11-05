@@ -1608,20 +1608,17 @@ function init(){
       return;
     }
 
-    console.log('=== SLOW MOTION START ===');
-    console.log('Character:', currentTargetChar);
-    showNotification('🐌 Loading slow motion...', 'info');
+    showNotification('🐌 Starting slow motion...', 'info');
 
     const container = document.getElementById('target');
     if (!container) {
-      console.error('Target container not found');
+      alert('Error: Container not found');
       return;
     }
 
     try {
       // Calculate responsive size
       const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
-      console.log('Container size:', maxSize);
 
       // Clear and recreate container
       container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
@@ -1630,41 +1627,40 @@ function init(){
       await ensureHanziWriterLoaded();
 
       if (!window.HanziWriter) {
-        throw new Error('HanziWriter library not loaded');
+        alert('Error: HanziWriter library not loaded');
+        return;
       }
 
-      console.log('Creating slow writer with settings: speed=0.2, delay=1500ms');
-
-      // Create new writer instance with slow settings
+      // Create new writer instance with VERY SLOW settings
       writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
         width: maxSize,
         height: maxSize,
         padding: 10,
         showOutline: true,
         showCharacter: false,  // Hide to see strokes appear progressively
-        strokeAnimationSpeed: 0.2,   // VERY slow (vs 1.5 normal)
+        strokeAnimationSpeed: 0.2,   // VERY slow (5x slower than normal)
         delayBetweenStrokes: 1500     // 1.5 second pause between strokes
       });
 
-      console.log('Writer instance created:', !!writerInstance);
-
       // Show character outline first
-      safeShowOrRender(writerInstance);
+      if (writerInstance) {
+        safeShowOrRender(writerInstance);
 
-      // Start slow animation after brief delay
-      setTimeout(() => {
-        if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
-          console.log('Starting slow motion animation...');
-          writerInstance.animateCharacter();
-          showNotification('🐌 Slow motion playing!', 'success');
-        } else {
-          console.error('Writer instance or animateCharacter not available');
-          showNotification('Animation unavailable', 'error');
-        }
-      }, 200);
+        // Start slow animation
+        setTimeout(() => {
+          if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
+            writerInstance.animateCharacter();
+            showNotification('🐌 Slow motion playing! Watch carefully...', 'success');
+          } else {
+            alert('Error: Animation function not available');
+          }
+        }, 100);
+      } else {
+        alert('Error: Failed to create writer instance');
+      }
     } catch (e) {
-      console.error('Slow motion error:', e);
-      showNotification('❌ Failed to load slow motion: ' + e.message, 'error');
+      alert('Error: ' + e.message);
+      showNotification('❌ Failed: ' + e.message, 'error');
     }
   });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
