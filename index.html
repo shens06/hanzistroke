@@ -717,33 +717,23 @@
   </div>
 
 <script>
-// CRITICAL: Define this function FIRST so it's always available
+// Play Animation button handler
 function testPlayButton() {
-  alert('✅ Button clicked! Testing animation...');
-  console.log('testPlayButton called');
-
-  // Check if writerInstance exists
   if (typeof writerInstance === 'undefined' || !writerInstance) {
-    alert('❌ ERROR: No writer instance found. Please select a character first.');
+    alert('Please select a character first');
     return;
   }
 
-  console.log('writerInstance exists:', writerInstance);
-
-  // Check if animateCharacter function exists
   if (typeof writerInstance.animateCharacter !== 'function') {
-    alert('❌ ERROR: animateCharacter function not available.');
+    alert('Animation not available. Please try again.');
     return;
   }
 
-  // Try to call animation
   try {
-    console.log('Calling animateCharacter...');
     writerInstance.animateCharacter();
-    alert('✅ SUCCESS! Animation called!');
   } catch (e) {
-    alert('❌ ERROR: ' + e.message);
     console.error('Animation error:', e);
+    alert('Animation failed. Please try selecting the character again.');
   }
 }
 
@@ -1657,30 +1647,7 @@ function init(){
       updateCategoryDisplay();
     }
   });
-  addListenerIfExists('animateTarget', 'click', ()=>{
-    console.log('Play button clicked!');
-    console.log('writerInstance exists:', !!writerInstance);
-    console.log('currentTargetChar:', currentTargetChar);
-
-    if (!writerInstance) {
-      alert('No character loaded. Please select a character first.');
-      return;
-    }
-
-    if (typeof writerInstance.animateCharacter !== 'function') {
-      alert('Animation function not available. Library may not be loaded.');
-      return;
-    }
-
-    try {
-      console.log('Calling animateCharacter...');
-      writerInstance.animateCharacter();
-      console.log('Animation started!');
-    } catch (e) {
-      console.error('Animation error:', e);
-      alert('Animation error: ' + e.message);
-    }
-  });
+  // Note: animateTarget uses direct onclick="testPlayButton()" instead of event listener
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
