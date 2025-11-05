@@ -224,8 +224,6 @@
     color: var(--text-secondary);
     font-size: 1.125rem;
     transition: all 0.3s ease;
-    overflow: hidden;
-    position: relative;
   }
   
   #target:has(#hw) {
@@ -461,11 +459,19 @@
     border-radius: 12px;
     font-size: 0.95rem;
     color: var(--text-secondary);
+    flex-wrap: wrap;
   }
 
   .collection-stats strong {
     color: #78350f;
     font-weight: 700;
+  }
+
+  .storage-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    opacity: 0.8;
   }
 
   .char-learned-badge {
@@ -576,50 +582,34 @@
     body {
       padding: 1rem;
     }
-
+    
     .header h1 {
       font-size: 2rem;
     }
-
+    
     .card {
-      padding: 1rem;
+      padding: 1.5rem;
     }
-
+    
     .input-section {
       flex-direction: column;
     }
-
+    
     input[type="text"] {
       width: 100%;
     }
-
+    
     button {
       width: 100%;
       justify-content: center;
     }
-
+    
     #target {
-      height: auto;
-      min-height: 280px;
-      max-width: calc(100vw - 2rem);
-      padding: 0.5rem;
-      margin: 1rem auto;
+      height: 300px;
     }
-
-    #hw {
-      max-width: 100% !important;
-      max-height: 100% !important;
-      width: auto !important;
-      height: auto !important;
-    }
-
+    
     #character-grid {
       grid-template-columns: 1fr;
-    }
-
-    .viewer-buttons button {
-      font-size: 0.85rem;
-      padding: 0.75rem 1rem;
     }
   }
 </style>
@@ -657,12 +647,13 @@
           <div>Select a character to view stroke order animation</div>
         </div>
       </div>
+
+      <!-- Main Action Buttons -->
       <div class="viewer-buttons">
         <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
         <button id="animateTargetSlow" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🐌 Slow Motion</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
-        <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
       </div>
     </div>
 
@@ -702,6 +693,7 @@
         <span>Total: <strong id="total-chars">0</strong></span>
         <span>Learned: <strong id="learned-chars">0</strong></span>
         <span>Learning: <strong id="learning-chars">0</strong></span>
+        <span class="storage-info" id="storage-info">Storage: <strong>0 KB</strong> used</span>
       </div>
       <div id="character-grid"></div>
 
@@ -918,9 +910,6 @@ async function translateToEnglish(chineseText) {
 let writers = [];
 let writerInstance = null;
 let currentTargetChar = '';
-let currentStroke = 0;
-let totalStrokes = 0;
-let isStepMode = false;
 const meanings = { '你':{pinyin:'nǐ',meaning:'you'}, '好':{pinyin:'hǎo',meaning:'good'}, '爱':{pinyin:'ài',meaning:'love'}, '中':{pinyin:'zhōng',meaning:'China'}, '国':{pinyin:'guó',meaning:'country'}, '女':{pinyin:'nǚ',meaning:'woman/female'} };
 
 // Character Categories Data
@@ -970,12 +959,22 @@ const characterCategories = {
 // Learning Progress Tracking
 let learnedChars = new Set();
 let currentCategory = 'hsk1';
-let categoryDisplayCount = 30; // Show 30 chars at a time
+let currentDisplayCount = 30; // How many chars currently displayed
 
 // Display category characters
-function displayCategory(categoryId, startIndex = 0) {
-  currentCategory = categoryId;
-  const category = characterCategories[categoryId];
+function displayCategory(categoryId, loadMore = false) {
+  // If switching categories, reset count
+  if (categoryId !== currentCategory) {
+    currentDisplayCount = 30;
+    currentCategory = categoryId;
+  }
+
+  // If loading more, increase count
+  if (loadMore) {
+    currentDisplayCount += 30;
+  }
+
+  const category = characterCategories[currentCategory];
   if (!category) return;
 
   const titleEl = document.getElementById('category-title');
@@ -994,12 +993,12 @@ function displayCategory(categoryId, startIndex = 0) {
     progressEl.innerHTML = `Learned: <strong>${learned}/${category.chars.length}</strong>`;
   }
 
-  // Display characters
+  // Display characters - always from 0 to currentDisplayCount
   if (charsEl) {
     charsEl.innerHTML = '';
-    const endIndex = Math.min(startIndex + categoryDisplayCount, category.chars.length);
+    const endIndex = Math.min(currentDisplayCount, category.chars.length);
 
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = 0; i < endIndex; i++) {
       const char = category.chars[i];
       const btn = document.createElement('button');
       btn.className = 'category-char-btn';
@@ -1036,13 +1035,11 @@ function displayCategory(categoryId, startIndex = 0) {
       }
     }
   }
-
-  categoryDisplayCount = endIndex;
 }
 
-// Update category display (refresh status)
+// Update category display (refresh status without changing count)
 function updateCategoryDisplay() {
-  displayCategory(currentCategory, 0);
+  displayCategory(currentCategory, false);
 }
 
 // Mark character as learned
@@ -1073,6 +1070,7 @@ function updateCollectionStats() {
   const totalEl = document.getElementById('total-chars');
   const learnedEl = document.getElementById('learned-chars');
   const learningEl = document.getElementById('learning-chars');
+  const storageEl = document.getElementById('storage-info');
 
   const total = writers.length;
   const learned = writers.filter(w => learnedChars.has(w.char)).length;
@@ -1081,6 +1079,30 @@ function updateCollectionStats() {
   if (totalEl) totalEl.textContent = total;
   if (learnedEl) learnedEl.textContent = learned;
   if (learningEl) learningEl.textContent = learning;
+
+  // Calculate storage used
+  if (storageEl) {
+    try {
+      let totalSize = 0;
+      // Calculate size of stored data
+      const charsData = localStorage.getItem('hanziCharacters');
+      const learnedData = localStorage.getItem('learnedChars');
+
+      if (charsData) totalSize += charsData.length * 2; // UTF-16 = 2 bytes per char
+      if (learnedData) totalSize += learnedData.length * 2;
+
+      const sizeKB = (totalSize / 1024).toFixed(2);
+      const sizeMB = (totalSize / (1024 * 1024)).toFixed(3);
+
+      if (totalSize > 1024 * 1024) {
+        storageEl.innerHTML = `Storage: <strong>${sizeMB} MB</strong> used`;
+      } else {
+        storageEl.innerHTML = `Storage: <strong>${sizeKB} KB</strong> used`;
+      }
+    } catch (e) {
+      storageEl.innerHTML = `Storage: <strong>N/A</strong>`;
+    }
+  }
 }
 
 // Save learning progress
@@ -1233,151 +1255,32 @@ document.head.appendChild(style);
 
 async function renderCharacterInTarget(char){
   currentTargetChar = char;
-  currentStroke = 0;
-  isStepMode = false;
 
   const container = document.getElementById('target');
   if (!container) { console.error('renderCharacterInTarget: #target not found'); return; }
-
-  // Calculate responsive size
-  const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
-
-  container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
-
-  // Update stroke controls
-  updateStrokeControls();
+  container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
 
   try{ await ensureHanziWriterLoaded(); }catch(e){ const msg = document.getElementById('libError'); if (msg){ msg.style.display='block'; msg.textContent = 'Unable to load HanziWriter library. Check network or CSP settings.'; } console.error('HanziWriter load failed', e); return; }
 
   try{
     if (!window.HanziWriter || typeof window.HanziWriter.create !== 'function') throw new Error('HanziWriter API is not available');
-    const size = maxSize;
+    const size = Math.min(360, container.clientWidth - 40);
     writerInstance = window.HanziWriter.create('hw', char, {
       width: size,
       height: size,
       padding:10,
       showOutline:true,
-      showCharacter:false, // Don't show full character initially
+      showCharacter:true,
       strokeAnimationSpeed:1.5,
       delayBetweenStrokes:200
     });
 
-    // Get total strokes
-    if (writerInstance._character && writerInstance._character.strokes) {
-      totalStrokes = writerInstance._character.strokes.length;
-    }
-
     safeShowOrRender(writerInstance);
-    updateStrokeControls();
 
     if (writerInstance && typeof writerInstance.animateCharacter === 'function'){
       setTimeout(()=>{ try{ writerInstance.animateCharacter(); }catch(e){ console.warn('animate failed', e); } }, 350);
     }
   }catch(e){ container.textContent = 'Unable to render stroke order (character data not available).'; console.error('renderCharacterInTarget error', e); }
-}
-
-// Show next stroke
-function showNextStroke() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  if (!isStepMode) {
-    // Enter step mode - hide character and start from beginning
-    isStepMode = true;
-    currentStroke = 0;
-    writerInstance.hideCharacter();
-    writerInstance.hideOutline();
-  }
-  
-  if (currentStroke < totalStrokes) {
-    writerInstance.animateStroke(currentStroke, {
-      onComplete: () => {
-        currentStroke++;
-        updateStrokeControls();
-      }
-    });
-  } else {
-    showNotification('All strokes completed! 🎉', 'success');
-  }
-}
-
-// Show previous stroke
-function showPreviousStroke() {
-  if (!writerInstance || !isStepMode) {
-    alert('Please enter step-by-step mode first by clicking "Next Stroke"');
-    return;
-  }
-  
-  if (currentStroke > 0) {
-    // Reset and replay up to previous stroke
-    currentStroke--;
-    writerInstance.hideCharacter();
-    
-    // Animate all strokes up to current one
-    for (let i = 0; i < currentStroke; i++) {
-      writerInstance.animateStroke(i, { duration: 200 });
-    }
-    
-    updateStrokeControls();
-  }
-}
-
-// Reset to beginning
-function resetStrokes() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  isStepMode = false;
-  currentStroke = 0;
-  writerInstance.hideCharacter();
-  writerInstance.showOutline();
-  updateStrokeControls();
-  
-  showNotification('Reset! Ready to practice. 🔄', 'info');
-}
-
-// Show all strokes at once
-function showAllStrokes() {
-  if (!writerInstance) {
-    alert('Please select a character first');
-    return;
-  }
-  
-  isStepMode = false;
-  currentStroke = totalStrokes;
-  writerInstance.showCharacter();
-  updateStrokeControls();
-}
-
-// Update stroke control buttons
-function updateStrokeControls() {
-  const strokeInfo = document.getElementById('strokeInfo');
-  const prevBtn = document.getElementById('prevStroke');
-  const nextBtn = document.getElementById('nextStroke');
-  
-  if (strokeInfo && totalStrokes > 0) {
-    strokeInfo.textContent = `Stroke ${currentStroke} / ${totalStrokes}`;
-    strokeInfo.style.display = 'block';
-  } else if (strokeInfo) {
-    strokeInfo.style.display = 'none';
-  }
-  
-  // Disable/enable buttons based on state
-  if (prevBtn) {
-    prevBtn.disabled = !isStepMode || currentStroke === 0;
-    prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
-    prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
-  }
-  
-  if (nextBtn) {
-    nextBtn.disabled = isStepMode && currentStroke >= totalStrokes;
-    nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
-    nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
-  }
 }
 
 async function createCharacterCard(char){
@@ -1417,7 +1320,15 @@ async function createCharacterCard(char){
   const learnBtnText = isLearned ? '✓ Learned' : '📌 Mark Learned';
   const learnBtnClass = isLearned ? 'btn-secondary' : 'btn-outline';
 
-  buttons.innerHTML = `<button onclick="animateCard('${id}')" class="btn-primary">▶️ Play</button><button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button><button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button><button onclick="toggleLearned('${char}'); updateCharCard('${char}');" class="${learnBtnClass}" id="learn-btn-${char}">${learnBtnText}</button>`;
+  buttons.innerHTML = `
+    <div style="display:flex;gap:0.25rem;">
+      <button onclick="animateCard('${id}')" class="btn-primary" style="flex:1;">▶️ Play</button>
+      <button onclick="animateCardSlow('${id}')" class="btn-primary" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#7c3aed);" title="Slow motion">🐌 Slow</button>
+    </div>
+    <button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button>
+    <button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button>
+    <button onclick="toggleLearned('${char}'); updateCharCard('${char}');" class="${learnBtnClass}" id="learn-btn-${char}">${learnBtnText}</button>
+  `;
   card.setAttribute('data-char', char);
   card.appendChild(canvasDiv); card.appendChild(infoDiv); card.appendChild(buttons); grid.appendChild(card);
   try{ 
@@ -1438,7 +1349,52 @@ async function createCharacterCard(char){
   }
 }
 
-function animateCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter(); }
+function animateCard(id){
+  const item = writers.find(w=>w.id===id);
+  if (item && item.writer && typeof item.writer.animateCharacter==='function') {
+    item.writer.animateCharacter();
+  }
+}
+
+async function animateCardSlow(id){
+  const item = writers.find(w=>w.id===id);
+  if (!item || !item.char) return;
+
+  // Recreate writer with VERY slow motion settings
+  const container = document.getElementById(id);
+  if (!container) return;
+
+  try {
+    await ensureHanziWriterLoaded();
+
+    console.log('Card slow motion for:', item.char, 'speed: 0.2, delay: 1500');
+
+    // Remove old writer and create new slow one
+    const newWriter = window.HanziWriter.create(id, item.char, {
+      width: 150,
+      height: 150,
+      padding: 5,
+      showOutline: true,
+      showCharacter: false,  // Hide to see strokes appear
+      strokeAnimationSpeed: 0.2,  // VERY slow
+      delayBetweenStrokes: 1500   // Long pauses
+    });
+
+    safeShowOrRender(newWriter);
+
+    // Update the writer in the array
+    item.writer = newWriter;
+
+    // Auto-play animation
+    setTimeout(() => {
+      if (newWriter && typeof newWriter.animateCharacter === 'function') {
+        newWriter.animateCharacter();
+      }
+    }, 100);
+  } catch(e) {
+    console.error('Slow card animation error:', e);
+  }
+}
 function quizCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.quiz === 'function'){ item.writer.quiz({ onComplete:function(passed){ if (passed) { markAsLearned(item.char); updateCharCard(item.char); alert('Great job! 🎉'); } else alert('Keep practicing! 💪'); }}); } else alert('Quiz not supported for this card.'); }
 function focusToTarget(char){ renderCharacterInTarget(char); document.getElementById('target').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 
@@ -1524,19 +1480,18 @@ function init(){
       categoryTabs.forEach(t => t.classList.remove('active'));
       // Add active to clicked tab
       tab.classList.add('active');
-      // Display the category
+      // Display the category (this will reset count automatically)
       const categoryId = tab.getAttribute('data-category');
-      categoryDisplayCount = 30; // Reset to initial count
-      displayCategory(categoryId, 0);
+      displayCategory(categoryId, false);
     });
   });
 
   // Display initial category
-  displayCategory('hsk1', 0);
+  displayCategory('hsk1', false);
 
-  // Load more button
+  // Load more button - pass true to load more
   addListenerIfExists('load-more-category', 'click', () => {
-    displayCategory(currentCategory, categoryDisplayCount);
+    displayCategory(currentCategory, true);
   });
 
   // Update stats on load
@@ -1582,52 +1537,58 @@ function init(){
       updateCategoryDisplay();
     }
   });
-  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('animateTarget', 'click', ()=>{
+    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      writerInstance.animateCharacter();
+    } else alert('Please select a character first');
+  });
+
   addListenerIfExists('animateTargetSlow', 'click', async ()=>{
     if (!currentTargetChar) {
       alert('Please select a character first');
       return;
     }
+
     showNotification('🐌 Loading slow motion...', 'info');
 
+    // Recreate writer with VERY slow motion settings
     const container = document.getElementById('target');
     if (!container) return;
 
-    // Calculate responsive size
-    const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
-
-    container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
+    container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
 
     try {
       await ensureHanziWriterLoaded();
-      const size = maxSize;
+      const size = Math.min(360, container.clientWidth - 40);
 
-      console.log('Slow motion for:', currentTargetChar, 'speed: 0.2, delay: 1500');
+      console.log('Creating slow motion with speed: 0.2, delay: 1500');
 
       writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
         width: size,
         height: size,
         padding: 10,
         showOutline: true,
-        showCharacter: false,  // Hide to see strokes appear progressively
-        strokeAnimationSpeed: 0.2,   // VERY slow (vs 1.5 normal)
+        showCharacter: false,  // Hide character to see strokes appear
+        strokeAnimationSpeed: 0.2,   // VERY slow (5x slower than 1.0)
         delayBetweenStrokes: 1500     // 1.5 second pause between strokes
       });
 
       safeShowOrRender(writerInstance);
 
+      // Auto-play with slow motion
       setTimeout(() => {
         if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
+          console.log('Starting slow motion animation');
           writerInstance.animateCharacter();
           showNotification('🐌 Slow motion playing!', 'success');
-          console.log('Slow motion animation started');
         }
       }, 100);
-    } catch (e) {
+    } catch(e) {
       console.error('Slow motion error:', e);
-      showNotification('Failed to load slow motion', 'error');
+      showNotification('❌ Slow motion failed', 'error');
     }
   });
+
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
