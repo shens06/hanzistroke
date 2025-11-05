@@ -879,7 +879,34 @@ function loadExternalScript(src){
 
 async function ensureHanziWriterLoaded(){
   if (typeof window.HanziWriter !== 'undefined') return;
-  await loadExternalScript('https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js');
+
+  // Try multiple CDN sources in case one is blocked
+  const cdnSources = [
+    'https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js',
+    'https://unpkg.com/hanzi-writer@3.7.3/dist/hanzi-writer.min.js',
+    'https://cdn.skypack.dev/hanzi-writer@3.7.3'
+  ];
+
+  for (let i = 0; i < cdnSources.length; i++) {
+    try {
+      console.log(`Trying to load HanziWriter from CDN #${i + 1}: ${cdnSources[i]}`);
+      await loadExternalScript(cdnSources[i]);
+
+      if (typeof window.HanziWriter !== 'undefined') {
+        console.log(`✅ HanziWriter loaded successfully from CDN #${i + 1}`);
+        showNotification('✅ Library loaded successfully!', 'success');
+        return;
+      }
+    } catch (e) {
+      console.warn(`Failed to load from CDN #${i + 1}:`, cdnSources[i], e);
+      if (i < cdnSources.length - 1) {
+        console.log('Trying next CDN source...');
+      }
+    }
+  }
+
+  // If all CDNs failed
+  throw new Error('Failed to load HanziWriter from all CDN sources. Please check your network connection.');
 }
 
 function safeShowOrRender(instance){
