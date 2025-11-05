@@ -1352,28 +1352,44 @@ async function createCharacterCard(char){
 function animateCard(id){
   const item = writers.find(w=>w.id===id);
   if (item && item.writer && typeof item.writer.animateCharacter==='function') {
-    // Reset to normal speed
-    if (typeof item.writer.setOptions === 'function') {
-      item.writer.setOptions({
-        strokeAnimationSpeed: 2,
-        delayBetweenStrokes: 200
-      });
-    }
     item.writer.animateCharacter();
   }
 }
 
-function animateCardSlow(id){
+async function animateCardSlow(id){
   const item = writers.find(w=>w.id===id);
-  if (item && item.writer && typeof item.writer.animateCharacter==='function') {
-    // Slow motion
-    if (typeof item.writer.setOptions === 'function') {
-      item.writer.setOptions({
-        strokeAnimationSpeed: 0.5,
-        delayBetweenStrokes: 600
-      });
-    }
-    item.writer.animateCharacter();
+  if (!item || !item.char) return;
+
+  // Recreate writer with slow motion settings
+  const container = document.getElementById(id);
+  if (!container) return;
+
+  try {
+    await ensureHanziWriterLoaded();
+
+    // Remove old writer and create new slow one
+    const newWriter = window.HanziWriter.create(id, item.char, {
+      width: 150,
+      height: 150,
+      padding: 5,
+      showOutline: true,
+      strokeAnimationSpeed: 0.3,  // Much slower
+      delayBetweenStrokes: 1000   // Longer pauses
+    });
+
+    safeShowOrRender(newWriter);
+
+    // Update the writer in the array
+    item.writer = newWriter;
+
+    // Auto-play animation
+    setTimeout(() => {
+      if (newWriter && typeof newWriter.animateCharacter === 'function') {
+        newWriter.animateCharacter();
+      }
+    }, 100);
+  } catch(e) {
+    console.error('Slow card animation error:', e);
   }
 }
 function quizCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.quiz === 'function'){ item.writer.quiz({ onComplete:function(passed){ if (passed) { markAsLearned(item.char); updateCharCard(item.char); alert('Great job! 🎉'); } else alert('Keep practicing! 💪'); }}); } else alert('Quiz not supported for this card.'); }
@@ -1520,28 +1536,46 @@ function init(){
   });
   addListenerIfExists('animateTarget', 'click', ()=>{
     if (writerInstance && typeof writerInstance.animateCharacter==='function') {
-      // Reset to normal speed
-      if (typeof writerInstance.setOptions === 'function') {
-        writerInstance.setOptions({
-          strokeAnimationSpeed: 1.5,
-          delayBetweenStrokes: 200
-        });
-      }
       writerInstance.animateCharacter();
     } else alert('Please select a character first');
   });
 
-  addListenerIfExists('animateTargetSlow', 'click', ()=>{
-    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
-      // Slow motion: 3x slower stroke speed, 3x longer delays
-      if (typeof writerInstance.setOptions === 'function') {
-        writerInstance.setOptions({
-          strokeAnimationSpeed: 0.5,  // Slower strokes (lower = slower)
-          delayBetweenStrokes: 600     // Longer pause between strokes
-        });
-      }
-      writerInstance.animateCharacter();
-    } else alert('Please select a character first');
+  addListenerIfExists('animateTargetSlow', 'click', async ()=>{
+    if (!currentTargetChar) {
+      alert('Please select a character first');
+      return;
+    }
+
+    // Recreate writer with slow motion settings
+    const container = document.getElementById('target');
+    if (!container) return;
+
+    container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+
+    try {
+      await ensureHanziWriterLoaded();
+      const size = Math.min(360, container.clientWidth - 40);
+      writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
+        width: size,
+        height: size,
+        padding: 10,
+        showOutline: true,
+        showCharacter: true,
+        strokeAnimationSpeed: 0.3,  // Much slower
+        delayBetweenStrokes: 1000   // Longer pauses
+      });
+
+      safeShowOrRender(writerInstance);
+
+      // Auto-play with slow motion
+      setTimeout(() => {
+        if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
+          writerInstance.animateCharacter();
+        }
+      }, 100);
+    } catch(e) {
+      console.error('Slow motion error:', e);
+    }
   });
 
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
