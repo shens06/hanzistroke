@@ -242,11 +242,24 @@
     background: linear-gradient(135deg, #f9fafb, #f3f4f6);
     border-radius: 12px;
     border: 2px dashed var(--border);
+    position: relative;
   }
 
   .stroke-controls button {
     flex: 1;
     min-width: 120px;
+  }
+
+  .stroke-hint {
+    width: 100%;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 8px;
+    font-weight: 500;
   }
 
   .viewer-buttons {
@@ -672,6 +685,9 @@
 
       <!-- Step-by-Step Stroke Controls -->
       <div class="stroke-controls">
+        <div class="stroke-hint" id="stroke-hint">
+          💡 Select a character to use step-by-step controls
+        </div>
         <button id="resetStroke" class="btn-outline" onclick="resetStrokes()" title="Reset to beginning">🔄 Reset</button>
         <button id="prevStroke" class="btn-secondary" onclick="showPreviousStroke()" title="Previous stroke">⬅️ Previous</button>
         <button id="nextStroke" class="btn-primary" onclick="showNextStroke()" title="Next stroke">➡️ Next Stroke</button>
@@ -1407,12 +1423,18 @@ function showAllStrokes() {
 // Update stroke control buttons
 function updateStrokeControls() {
   const strokeInfo = document.getElementById('strokeInfo');
+  const strokeHint = document.getElementById('stroke-hint');
   const prevBtn = document.getElementById('prevStroke');
   const nextBtn = document.getElementById('nextStroke');
   const resetBtn = document.getElementById('resetStroke');
   const showAllBtn = document.getElementById('showAll');
 
   const hasChar = totalStrokes > 0;
+
+  // Show/hide hint message
+  if (strokeHint) {
+    strokeHint.style.display = hasChar ? 'none' : 'block';
+  }
 
   if (strokeInfo) {
     if (hasChar) {
@@ -1610,6 +1632,9 @@ function init(){
   // Update stats on load
   updateCollectionStats();
 
+  // Initialize stroke controls
+  updateStrokeControls();
+
   addListenerIfExists('showBtn', 'click', ()=> handleInputRaw(document.getElementById('inputBox') ? document.getElementById('inputBox').value : ''));
   addListenerIfExists('animateAllBtn', 'click', ()=>{ if (writers.length===0){ alert('Please add some characters first!'); return; } writers.forEach((w, idx)=>{ setTimeout(()=>{ try{ if (w.writer && typeof w.writer.animateCharacter==='function') w.writer.animateCharacter(); }catch(e){} }, idx*1200); }); });
   addListenerIfExists('saveBtn', 'click', ()=>{ 
@@ -1648,6 +1673,7 @@ function init(){
       clearSavedCharacters();
       updateCollectionStats();
       updateCategoryDisplay();
+      updateStrokeControls();
     }
   });
   addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
