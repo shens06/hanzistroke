@@ -640,7 +640,8 @@
         </div>
       </div>
       <div class="viewer-buttons">
-        <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
+        <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
+        <button id="animateTargetSlow" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🐌 Slow Motion</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
         <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
@@ -1560,6 +1561,48 @@ function init(){
     }
   });
   addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { isStepMode = false; currentStroke = 0; writerInstance.showOutline(); writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('animateTargetSlow', 'click', async ()=>{
+    if (!currentTargetChar) {
+      alert('Please select a character first');
+      return;
+    }
+    showNotification('🐌 Loading slow motion...', 'info');
+
+    const container = document.getElementById('target');
+    if (!container) return;
+
+    container.innerHTML = '<div id="hw" style="width:360px;height:360px;max-width:100%;margin:0 auto;"></div>';
+
+    try {
+      await ensureHanziWriterLoaded();
+      const size = Math.min(360, container.clientWidth - 40);
+
+      console.log('Slow motion for:', currentTargetChar, 'speed: 0.2, delay: 1500');
+
+      writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
+        width: size,
+        height: size,
+        padding: 10,
+        showOutline: true,
+        showCharacter: false,  // Hide to see strokes appear progressively
+        strokeAnimationSpeed: 0.2,   // VERY slow (vs 1.5 normal)
+        delayBetweenStrokes: 1500     // 1.5 second pause between strokes
+      });
+
+      safeShowOrRender(writerInstance);
+
+      setTimeout(() => {
+        if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
+          writerInstance.animateCharacter();
+          showNotification('🐌 Slow motion playing!', 'success');
+          console.log('Slow motion animation started');
+        }
+      }, 100);
+    } catch (e) {
+      console.error('Slow motion error:', e);
+      showNotification('Failed to load slow motion', 'error');
+    }
+  });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
