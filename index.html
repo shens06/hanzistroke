@@ -1628,10 +1628,27 @@ function init(){
     }
   });
   addListenerIfExists('animateTarget', 'click', ()=>{
-    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+    console.log('Play button clicked!');
+    console.log('writerInstance exists:', !!writerInstance);
+    console.log('currentTargetChar:', currentTargetChar);
+
+    if (!writerInstance) {
+      alert('No character loaded. Please select a character first.');
+      return;
+    }
+
+    if (typeof writerInstance.animateCharacter !== 'function') {
+      alert('Animation function not available. Library may not be loaded.');
+      return;
+    }
+
+    try {
+      console.log('Calling animateCharacter...');
       writerInstance.animateCharacter();
-    } else {
-      alert('Please select a character first');
+      console.log('Animation started!');
+    } catch (e) {
+      console.error('Animation error:', e);
+      alert('Animation error: ' + e.message);
     }
   });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
