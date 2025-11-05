@@ -650,7 +650,8 @@
 
       <!-- Main Action Buttons -->
       <div class="viewer-buttons">
-        <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
+        <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
+        <button id="animateTargetSlow" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🐌 Slow Motion</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
         <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
       </div>
@@ -1319,7 +1320,15 @@ async function createCharacterCard(char){
   const learnBtnText = isLearned ? '✓ Learned' : '📌 Mark Learned';
   const learnBtnClass = isLearned ? 'btn-secondary' : 'btn-outline';
 
-  buttons.innerHTML = `<button onclick="animateCard('${id}')" class="btn-primary">▶️ Play</button><button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button><button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button><button onclick="toggleLearned('${char}'); updateCharCard('${char}');" class="${learnBtnClass}" id="learn-btn-${char}">${learnBtnText}</button>`;
+  buttons.innerHTML = `
+    <div style="display:flex;gap:0.25rem;">
+      <button onclick="animateCard('${id}')" class="btn-primary" style="flex:1;">▶️ Play</button>
+      <button onclick="animateCardSlow('${id}')" class="btn-primary" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#7c3aed);" title="Slow motion">🐌 Slow</button>
+    </div>
+    <button onclick="quizCard('${id}')" class="btn-secondary">📝 Practice</button>
+    <button onclick="focusToTarget('${char}')" class="btn-outline">👁️ View</button>
+    <button onclick="toggleLearned('${char}'); updateCharCard('${char}');" class="${learnBtnClass}" id="learn-btn-${char}">${learnBtnText}</button>
+  `;
   card.setAttribute('data-char', char);
   card.appendChild(canvasDiv); card.appendChild(infoDiv); card.appendChild(buttons); grid.appendChild(card);
   try{ 
@@ -1341,6 +1350,7 @@ async function createCharacterCard(char){
 }
 
 function animateCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter(); }
+function animateCardSlow(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter({ strokeAnimationSpeed: 0.5, delayBetweenStrokes: 600 }); }
 function quizCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.quiz === 'function'){ item.writer.quiz({ onComplete:function(passed){ if (passed) { markAsLearned(item.char); updateCharCard(item.char); alert('Great job! 🎉'); } else alert('Keep practicing! 💪'); }}); } else alert('Quiz not supported for this card.'); }
 function focusToTarget(char){ renderCharacterInTarget(char); document.getElementById('target').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 
@@ -1483,7 +1493,22 @@ function init(){
       updateCategoryDisplay();
     }
   });
-  addListenerIfExists('animateTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.animateCharacter==='function') { writerInstance.animateCharacter(); } else alert('Please select a character first'); });
+  addListenerIfExists('animateTarget', 'click', ()=>{
+    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      writerInstance.animateCharacter();
+    } else alert('Please select a character first');
+  });
+
+  addListenerIfExists('animateTargetSlow', 'click', ()=>{
+    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      // Slow motion: 3x slower stroke speed, 2x longer delays
+      writerInstance.animateCharacter({
+        strokeAnimationSpeed: 0.5,  // Slower strokes (lower = slower)
+        delayBetweenStrokes: 600     // Longer pause between strokes
+      });
+    } else alert('Please select a character first');
+  });
+
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
   addListenerIfExists('speakTarget', 'click', ()=>{ if (currentTargetChar) speakChinese(currentTargetChar); else alert('Please select a character first'); });
   addListenerIfExists('testAudio', 'click', ()=>{ 
