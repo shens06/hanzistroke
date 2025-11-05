@@ -1627,53 +1627,11 @@ function init(){
       updateCategoryDisplay();
     }
   });
-  addListenerIfExists('animateTarget', 'click', async ()=>{
-    if (!currentTargetChar) {
+  addListenerIfExists('animateTarget', 'click', ()=>{
+    if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      writerInstance.animateCharacter();
+    } else {
       alert('Please select a character first');
-      return;
-    }
-
-    showNotification('▶️ Playing normal speed...', 'info');
-
-    // Recreate writer instance for normal speed
-    const container = document.getElementById('target');
-    if (!container) {
-      alert('Error: Container not found');
-      return;
-    }
-
-    try {
-      const maxSize = Math.min(360, container.clientWidth - 40, window.innerWidth - 80);
-      container.innerHTML = `<div id="hw" style="width:${maxSize}px;height:${maxSize}px;max-width:100%;margin:0 auto;"></div>`;
-
-      await ensureHanziWriterLoaded();
-
-      if (!window.HanziWriter) {
-        alert('Error: HanziWriter not loaded');
-        return;
-      }
-
-      writerInstance = window.HanziWriter.create('hw', currentTargetChar, {
-        width: maxSize,
-        height: maxSize,
-        padding: 10,
-        showOutline: true,
-        showCharacter: false,
-        strokeAnimationSpeed: 1.5,  // Normal speed
-        delayBetweenStrokes: 200    // Short delay
-      });
-
-      if (writerInstance) {
-        safeShowOrRender(writerInstance);
-        setTimeout(() => {
-          if (writerInstance && typeof writerInstance.animateCharacter === 'function') {
-            writerInstance.animateCharacter();
-            showNotification('▶️ Playing!', 'success');
-          }
-        }, 100);
-      }
-    } catch (e) {
-      alert('Error: ' + e.message);
     }
   });
   addListenerIfExists('quizTarget', 'click', ()=>{ if (writerInstance && typeof writerInstance.quiz==='function'){ writerInstance.quiz({ onComplete:function(passed){ if (passed) { showNotification('Perfect! You got it! 🎉', 'success'); } else { showNotification('Keep practicing! Try again! 💪', 'info'); } }}); } else alert('Please select a character first'); });
