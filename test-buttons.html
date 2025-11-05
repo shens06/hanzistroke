@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Button Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 8px;
+      border: none;
+      color: white;
+    }
+    .btn-primary { background: #6366f1; }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Animation Button Test</h1>
+
+  <div class="status" id="status">
+    Status: Waiting...
+  </div>
+
+  <div>
+    <button id="animateTarget" class="btn-primary">▶️ Normal Speed</button>
+    <button id="animateTargetSlow" class="btn-primary">🐌 Slow Motion</button>
+  </div>
+
+  <script>
+    function updateStatus(msg) {
+      document.getElementById('status').innerHTML = msg;
+      console.log(msg);
+    }
+
+    // Check if buttons exist
+    window.addEventListener('DOMContentLoaded', function() {
+      const normalBtn = document.getElementById('animateTarget');
+      const slowBtn = document.getElementById('animateTargetSlow');
+
+      updateStatus(`Normal button found: ${!!normalBtn}<br>Slow button found: ${!!slowBtn}`);
+
+      if (normalBtn) {
+        normalBtn.addEventListener('click', function() {
+          updateStatus('✅ Normal Speed button clicked!');
+          alert('Normal Speed button works!');
+        });
+      } else {
+        updateStatus('❌ Normal Speed button NOT FOUND');
+      }
+
+      if (slowBtn) {
+        slowBtn.addEventListener('click', function() {
+          updateStatus('✅ Slow Motion button clicked!');
+          alert('Slow Motion button works!');
+        });
+      } else {
+        updateStatus('❌ Slow Motion button NOT FOUND');
+      }
+    });
+  </script>
+</body>
+</html>
