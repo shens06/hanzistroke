@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HanziWriter Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    button {
+      padding: 20px 40px;
+      margin: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 12px;
+      background: #6366f1;
+      color: white;
+      font-weight: bold;
+      border: none;
+    }
+    #target {
+      width: 400px;
+      height: 400px;
+      margin: 20px auto;
+      border: 3px solid #6366f1;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .msg {
+      padding: 15px;
+      margin: 10px;
+      background: #d1fae5;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 HanziWriter Library Test</h1>
+  <div class="msg" id="status">Loading...</div>
+
+  <div id="target">
+    <div id="hw"></div>
+  </div>
+
+  <button onclick="testAnimation()">▶️ Test Animation</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
+  <script>
+    let writer = null;
+
+    function updateStatus(msg) {
+      document.getElementById('status').textContent = msg;
+      console.log(msg);
+    }
+
+    // Check if HanziWriter loaded
+    window.addEventListener('load', function() {
+      if (typeof HanziWriter !== 'undefined') {
+        updateStatus('✅ HanziWriter library loaded successfully!');
+        alert('✅ Library loaded! Click the button to test animation.');
+
+        // Create initial writer
+        writer = HanziWriter.create('hw', '你', {
+          width: 360,
+          height: 360,
+          padding: 10,
+          showOutline: true,
+          showCharacter: true
+        });
+      } else {
+        updateStatus('❌ ERROR: HanziWriter library failed to load!');
+        alert('❌ Library NOT loaded!');
+      }
+    });
+
+    function testAnimation() {
+      if (!writer) {
+        alert('❌ Writer not initialized!');
+        return;
+      }
+
+      updateStatus('🎬 Starting animation...');
+
+      try {
+        writer.animateCharacter({
+          onComplete: function() {
+            updateStatus('✅ Animation completed!');
+            alert('✅ Animation worked!');
+          }
+        });
+      } catch (e) {
+        updateStatus('❌ Animation error: ' + e.message);
+        alert('❌ Animation failed: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
