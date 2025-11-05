@@ -1349,8 +1349,33 @@ async function createCharacterCard(char){
   }
 }
 
-function animateCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter(); }
-function animateCardSlow(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.animateCharacter==='function') item.writer.animateCharacter({ strokeAnimationSpeed: 0.5, delayBetweenStrokes: 600 }); }
+function animateCard(id){
+  const item = writers.find(w=>w.id===id);
+  if (item && item.writer && typeof item.writer.animateCharacter==='function') {
+    // Reset to normal speed
+    if (typeof item.writer.setOptions === 'function') {
+      item.writer.setOptions({
+        strokeAnimationSpeed: 2,
+        delayBetweenStrokes: 200
+      });
+    }
+    item.writer.animateCharacter();
+  }
+}
+
+function animateCardSlow(id){
+  const item = writers.find(w=>w.id===id);
+  if (item && item.writer && typeof item.writer.animateCharacter==='function') {
+    // Slow motion
+    if (typeof item.writer.setOptions === 'function') {
+      item.writer.setOptions({
+        strokeAnimationSpeed: 0.5,
+        delayBetweenStrokes: 600
+      });
+    }
+    item.writer.animateCharacter();
+  }
+}
 function quizCard(id){ const item = writers.find(w=>w.id===id); if (item && item.writer && typeof item.writer.quiz === 'function'){ item.writer.quiz({ onComplete:function(passed){ if (passed) { markAsLearned(item.char); updateCharCard(item.char); alert('Great job! 🎉'); } else alert('Keep practicing! 💪'); }}); } else alert('Quiz not supported for this card.'); }
 function focusToTarget(char){ renderCharacterInTarget(char); document.getElementById('target').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 
@@ -1495,17 +1520,27 @@ function init(){
   });
   addListenerIfExists('animateTarget', 'click', ()=>{
     if (writerInstance && typeof writerInstance.animateCharacter==='function') {
+      // Reset to normal speed
+      if (typeof writerInstance.setOptions === 'function') {
+        writerInstance.setOptions({
+          strokeAnimationSpeed: 1.5,
+          delayBetweenStrokes: 200
+        });
+      }
       writerInstance.animateCharacter();
     } else alert('Please select a character first');
   });
 
   addListenerIfExists('animateTargetSlow', 'click', ()=>{
     if (writerInstance && typeof writerInstance.animateCharacter==='function') {
-      // Slow motion: 3x slower stroke speed, 2x longer delays
-      writerInstance.animateCharacter({
-        strokeAnimationSpeed: 0.5,  // Slower strokes (lower = slower)
-        delayBetweenStrokes: 600     // Longer pause between strokes
-      });
+      // Slow motion: 3x slower stroke speed, 3x longer delays
+      if (typeof writerInstance.setOptions === 'function') {
+        writerInstance.setOptions({
+          strokeAnimationSpeed: 0.5,  // Slower strokes (lower = slower)
+          delayBetweenStrokes: 600     // Longer pause between strokes
+        });
+      }
+      writerInstance.animateCharacter();
     } else alert('Please select a character first');
   });
 
