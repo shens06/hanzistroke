@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ULTRA Simple Button Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    button {
+      padding: 20px 40px;
+      margin: 20px;
+      font-size: 20px;
+      cursor: pointer;
+      border-radius: 12px;
+      border: 2px solid #000;
+      background: #6366f1;
+      color: white;
+      font-weight: bold;
+    }
+    h1 { color: #333; }
+  </style>
+</head>
+<body>
+  <h1>🧪 ULTRA SIMPLE TEST</h1>
+  <p style="font-size: 18px; color: #666;">If you see this text, the page loaded correctly.</p>
+
+  <button id="testBtn">CLICK ME TO TEST</button>
+
+  <script>
+    // Alert when page loads
+    alert('✅ Page loaded! You should see a blue button.');
+
+    // Add click listener
+    document.getElementById('testBtn').addEventListener('click', function() {
+      alert('✅ BUTTON WORKS! JavaScript is running!');
+    });
+
+    // Verify button exists
+    setTimeout(function() {
+      const btn = document.getElementById('testBtn');
+      if (btn) {
+        console.log('Button found:', btn);
+      } else {
+        alert('❌ ERROR: Button not found!');
+      }
+    }, 500);
+  </script>
+</body>
+</html>
