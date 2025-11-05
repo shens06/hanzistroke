@@ -459,11 +459,19 @@
     border-radius: 12px;
     font-size: 0.95rem;
     color: var(--text-secondary);
+    flex-wrap: wrap;
   }
 
   .collection-stats strong {
     color: #78350f;
     font-weight: 700;
+  }
+
+  .storage-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    opacity: 0.8;
   }
 
   .char-learned-badge {
@@ -683,6 +691,7 @@
         <span>Total: <strong id="total-chars">0</strong></span>
         <span>Learned: <strong id="learned-chars">0</strong></span>
         <span>Learning: <strong id="learning-chars">0</strong></span>
+        <span class="storage-info" id="storage-info">Storage: <strong>0 KB</strong> used</span>
       </div>
       <div id="character-grid"></div>
 
@@ -1062,6 +1071,7 @@ function updateCollectionStats() {
   const totalEl = document.getElementById('total-chars');
   const learnedEl = document.getElementById('learned-chars');
   const learningEl = document.getElementById('learning-chars');
+  const storageEl = document.getElementById('storage-info');
 
   const total = writers.length;
   const learned = writers.filter(w => learnedChars.has(w.char)).length;
@@ -1070,6 +1080,30 @@ function updateCollectionStats() {
   if (totalEl) totalEl.textContent = total;
   if (learnedEl) learnedEl.textContent = learned;
   if (learningEl) learningEl.textContent = learning;
+
+  // Calculate storage used
+  if (storageEl) {
+    try {
+      let totalSize = 0;
+      // Calculate size of stored data
+      const charsData = localStorage.getItem('hanziCharacters');
+      const learnedData = localStorage.getItem('learnedChars');
+
+      if (charsData) totalSize += charsData.length * 2; // UTF-16 = 2 bytes per char
+      if (learnedData) totalSize += learnedData.length * 2;
+
+      const sizeKB = (totalSize / 1024).toFixed(2);
+      const sizeMB = (totalSize / (1024 * 1024)).toFixed(3);
+
+      if (totalSize > 1024 * 1024) {
+        storageEl.innerHTML = `Storage: <strong>${sizeMB} MB</strong> used`;
+      } else {
+        storageEl.innerHTML = `Storage: <strong>${sizeKB} KB</strong> used`;
+      }
+    } catch (e) {
+      storageEl.innerHTML = `Storage: <strong>N/A</strong>`;
+    }
+  }
 }
 
 // Save learning progress
