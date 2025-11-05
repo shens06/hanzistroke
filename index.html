@@ -658,9 +658,9 @@
         </div>
       </div>
       <div class="viewer-buttons">
-        <button id="animateTarget" class="btn-primary" onclick="testPlayButton()">▶️ Play Animation</button>
-        <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
-        <button id="speakTarget" class="btn-accent">🔊 Pronounce</button>
+        <button id="animateTarget" class="btn-primary" onclick="playAnimation()">▶️ Play Animation</button>
+        <button id="quizTarget" class="btn-secondary" onclick="startQuiz()">📝 Practice Quiz</button>
+        <button id="speakTarget" class="btn-accent" onclick="pronounceCharacter()">🔊 Pronounce</button>
         <button id="testAudio" class="btn-outline" style="background:#f3f4f6;color:#666;border-color:#d1d5db">🔧 Test Audio</button>
       </div>
     </div>
@@ -717,8 +717,8 @@
   </div>
 
 <script>
-// Play Animation button handler
-function testPlayButton() {
+// Main card button handlers - defined first to ensure they're always available
+function playAnimation() {
   if (typeof writerInstance === 'undefined' || !writerInstance) {
     alert('Please select a character first');
     return;
@@ -734,6 +734,47 @@ function testPlayButton() {
   } catch (e) {
     console.error('Animation error:', e);
     alert('Animation failed. Please try selecting the character again.');
+  }
+}
+
+function startQuiz() {
+  if (typeof writerInstance === 'undefined' || !writerInstance) {
+    alert('Please select a character first');
+    return;
+  }
+
+  if (typeof writerInstance.quiz !== 'function') {
+    alert('Quiz not available for this character');
+    return;
+  }
+
+  try {
+    writerInstance.quiz({
+      onComplete: function(passed) {
+        if (passed) {
+          showNotification('Perfect! You got it! 🎉', 'success');
+        } else {
+          showNotification('Keep practicing! Try again! 💪', 'info');
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Quiz error:', e);
+    alert('Quiz failed. Please try again.');
+  }
+}
+
+function pronounceCharacter() {
+  if (typeof currentTargetChar === 'undefined' || !currentTargetChar) {
+    alert('Please select a character first');
+    return;
+  }
+
+  try {
+    speakChinese(currentTargetChar);
+  } catch (e) {
+    console.error('Pronunciation error:', e);
+    alert('Pronunciation failed. Please check your audio settings.');
   }
 }
 
