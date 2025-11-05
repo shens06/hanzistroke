@@ -232,6 +232,23 @@
     background: white;
   }
   
+  .stroke-controls {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+    border-radius: 12px;
+    border: 2px dashed var(--border);
+  }
+
+  .stroke-controls button {
+    flex: 1;
+    min-width: 120px;
+  }
+
   .viewer-buttons {
     display: flex;
     gap: 0.75rem;
@@ -647,6 +664,21 @@
           <div>Select a character to view stroke order animation</div>
         </div>
       </div>
+
+      <!-- Stroke Progress Indicator -->
+      <div id="strokeInfo" style="display: none; text-align: center; font-size: 1.125rem; font-weight: 600; color: var(--primary); margin: 1rem 0; padding: 0.5rem; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 8px;">
+        Stroke 0 / 0
+      </div>
+
+      <!-- Step-by-Step Stroke Controls -->
+      <div class="stroke-controls">
+        <button id="resetStroke" class="btn-outline" onclick="resetStrokes()" title="Reset to beginning">🔄 Reset</button>
+        <button id="prevStroke" class="btn-secondary" onclick="showPreviousStroke()" title="Previous stroke">⬅️ Previous</button>
+        <button id="nextStroke" class="btn-primary" onclick="showNextStroke()" title="Next stroke">➡️ Next Stroke</button>
+        <button id="showAll" class="btn-accent" onclick="showAllStrokes()" title="Show complete character">👁️ Show All</button>
+      </div>
+
+      <!-- Main Action Buttons -->
       <div class="viewer-buttons">
         <button id="animateTarget" class="btn-primary">▶️ Play Animation</button>
         <button id="quizTarget" class="btn-secondary">📝 Practice Quiz</button>
@@ -1377,25 +1409,43 @@ function updateStrokeControls() {
   const strokeInfo = document.getElementById('strokeInfo');
   const prevBtn = document.getElementById('prevStroke');
   const nextBtn = document.getElementById('nextStroke');
-  
-  if (strokeInfo && totalStrokes > 0) {
-    strokeInfo.textContent = `Stroke ${currentStroke} / ${totalStrokes}`;
-    strokeInfo.style.display = 'block';
-  } else if (strokeInfo) {
-    strokeInfo.style.display = 'none';
+  const resetBtn = document.getElementById('resetStroke');
+  const showAllBtn = document.getElementById('showAll');
+
+  const hasChar = totalStrokes > 0;
+
+  if (strokeInfo) {
+    if (hasChar) {
+      strokeInfo.textContent = `Stroke ${currentStroke} / ${totalStrokes}`;
+      strokeInfo.style.display = 'block';
+    } else {
+      strokeInfo.style.display = 'none';
+    }
   }
-  
+
   // Disable/enable buttons based on state
   if (prevBtn) {
     prevBtn.disabled = !isStepMode || currentStroke === 0;
     prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
     prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
   }
-  
+
   if (nextBtn) {
-    nextBtn.disabled = isStepMode && currentStroke >= totalStrokes;
+    nextBtn.disabled = (isStepMode && currentStroke >= totalStrokes) || !hasChar;
     nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
     nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
+  }
+
+  if (resetBtn) {
+    resetBtn.disabled = !hasChar || (!isStepMode && currentStroke === 0);
+    resetBtn.style.opacity = resetBtn.disabled ? '0.5' : '1';
+    resetBtn.style.cursor = resetBtn.disabled ? 'not-allowed' : 'pointer';
+  }
+
+  if (showAllBtn) {
+    showAllBtn.disabled = !hasChar;
+    showAllBtn.style.opacity = showAllBtn.disabled ? '0.5' : '1';
+    showAllBtn.style.cursor = showAllBtn.disabled ? 'not-allowed' : 'pointer';
   }
 }
 
