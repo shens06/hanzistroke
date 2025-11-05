@@ -951,12 +951,22 @@ const characterCategories = {
 // Learning Progress Tracking
 let learnedChars = new Set();
 let currentCategory = 'hsk1';
-let categoryDisplayCount = 30; // Show 30 chars at a time
+let currentDisplayCount = 30; // How many chars currently displayed
 
 // Display category characters
-function displayCategory(categoryId, startIndex = 0) {
-  currentCategory = categoryId;
-  const category = characterCategories[categoryId];
+function displayCategory(categoryId, loadMore = false) {
+  // If switching categories, reset count
+  if (categoryId !== currentCategory) {
+    currentDisplayCount = 30;
+    currentCategory = categoryId;
+  }
+
+  // If loading more, increase count
+  if (loadMore) {
+    currentDisplayCount += 30;
+  }
+
+  const category = characterCategories[currentCategory];
   if (!category) return;
 
   const titleEl = document.getElementById('category-title');
@@ -975,12 +985,12 @@ function displayCategory(categoryId, startIndex = 0) {
     progressEl.innerHTML = `Learned: <strong>${learned}/${category.chars.length}</strong>`;
   }
 
-  // Display characters
+  // Display characters - always from 0 to currentDisplayCount
   if (charsEl) {
     charsEl.innerHTML = '';
-    const endIndex = Math.min(startIndex + categoryDisplayCount, category.chars.length);
+    const endIndex = Math.min(currentDisplayCount, category.chars.length);
 
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = 0; i < endIndex; i++) {
       const char = category.chars[i];
       const btn = document.createElement('button');
       btn.className = 'category-char-btn';
@@ -1017,13 +1027,11 @@ function displayCategory(categoryId, startIndex = 0) {
       }
     }
   }
-
-  categoryDisplayCount = endIndex;
 }
 
-// Update category display (refresh status)
+// Update category display (refresh status without changing count)
 function updateCategoryDisplay() {
-  displayCategory(currentCategory, 0);
+  displayCategory(currentCategory, false);
 }
 
 // Mark character as learned
@@ -1501,19 +1509,18 @@ function init(){
       categoryTabs.forEach(t => t.classList.remove('active'));
       // Add active to clicked tab
       tab.classList.add('active');
-      // Display the category
+      // Display the category (this will reset count automatically)
       const categoryId = tab.getAttribute('data-category');
-      categoryDisplayCount = 30; // Reset to initial count
-      displayCategory(categoryId, 0);
+      displayCategory(categoryId, false);
     });
   });
 
   // Display initial category
-  displayCategory('hsk1', 0);
+  displayCategory('hsk1', false);
 
-  // Load more button
+  // Load more button - pass true to load more
   addListenerIfExists('load-more-category', 'click', () => {
-    displayCategory(currentCategory, categoryDisplayCount);
+    displayCategory(currentCategory, true);
   });
 
   // Update stats on load
