@@ -636,11 +636,11 @@
     <div class="card">
       <h2 class="card-title">Search Characters</h2>
       <div class="input-section">
-        <input id="inputBox" type="text" placeholder="Type pinyin (e.g. nv3, ni3 hao3) or paste Chinese characters (你好世界)..." />
-        <button id="showBtn" class="btn-primary">🔍 Search</button>
-        <button id="animateAllBtn" class="btn-secondary">▶️ Animate All</button>
-        <button id="saveBtn" class="btn-accent" title="Save your characters">💾 Save</button>
-        <button id="clearBtn" class="btn-danger">🗑️ Clear All</button>
+        <input id="inputBox" type="text" placeholder="Type pinyin (e.g. nv3, ni3 hao3) or paste Chinese characters (你好世界)..." onkeydown="if(event.key==='Enter'){searchCharacters();event.preventDefault();}" />
+        <button id="showBtn" class="btn-primary" onclick="searchCharacters()">🔍 Search</button>
+        <button id="animateAllBtn" class="btn-secondary" onclick="animateAllCharacters()">▶️ Animate All</button>
+        <button id="saveBtn" class="btn-accent" title="Save your characters" onclick="saveCharactersBtn()">💾 Save</button>
+        <button id="clearBtn" class="btn-danger" onclick="clearAllCharacters()">🗑️ Clear All</button>
       </div>
       <div id="pinyinShow"></div>
       <div id="candidates" aria-live="polite"></div>
@@ -777,6 +777,67 @@ function pronounceCharacter() {
   } catch (e) {
     console.error('Pronunciation error:', e);
     alert('Pronunciation failed. Please check your audio settings.');
+  }
+}
+
+// Search button handler - defined at top for reliability
+function searchCharacters() {
+  const inputBox = document.getElementById('inputBox');
+  if (!inputBox) {
+    alert('Input box not found');
+    return;
+  }
+  const value = inputBox.value;
+  if (!value || value.trim() === '') {
+    alert('Please enter pinyin or Chinese characters');
+    return;
+  }
+  handleInputRaw(value);
+}
+
+// Animate all button handler
+function animateAllCharacters() {
+  if (writers.length === 0) {
+    alert('Please add some characters first!');
+    return;
+  }
+  writers.forEach((w, idx) => {
+    setTimeout(() => {
+      try {
+        if (w.writer && typeof w.writer.animateCharacter === 'function') {
+          w.writer.animateCharacter();
+        }
+      } catch (e) {
+        console.error('Animation error:', e);
+      }
+    }, idx * 1200);
+  });
+}
+
+// Save button handler
+function saveCharactersBtn() {
+  if (writers.length === 0) {
+    alert('No characters to save! Add some characters first.');
+    return;
+  }
+  saveCharacters();
+  showNotification('Characters saved! 💾', 'success');
+}
+
+// Clear all button handler
+function clearAllCharacters() {
+  if (writers.length === 0) {
+    alert('No characters to clear!');
+    return;
+  }
+  if (confirm('Are you sure you want to clear all characters?')) {
+    writers = [];
+    const grid = document.getElementById('character-grid');
+    if (grid) grid.innerHTML = '';
+    saveCharacters();
+    updateCollectionStats();
+    updateCategoryDisplay();
+    showNotification('All characters cleared! 🗑️', 'info');
   }
 }
 
